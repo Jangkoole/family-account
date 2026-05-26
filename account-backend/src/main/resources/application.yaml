@@ -1,0 +1,18 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: account
+  profiles:
+    active: local # Spring Boot会自动去招application-local.yaml并把里面的配置合并进来，覆盖application.yaml的空值
+  datasource:
+    url:
+    username:
+    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
