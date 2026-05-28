@@ -1,4 +1,9 @@
 package com.family.account.mapper;
 
-public class FamilyMapper {
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.family.account.entity.Family;
+import org.apache.ibatis.annotations.Mapper;
+
+@Mapper
+public interface FamilyMapper extends BaseMapper<Family> {
 }
