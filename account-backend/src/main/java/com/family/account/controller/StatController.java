@@ -14,25 +14,29 @@ public class StatController {
     private StatService statService;
 
     @GetMapping("/summary")
-    public Result summary(@RequestParam String type, @RequestParam String date) {
+    public Result summary(@RequestParam String type,
+                          @RequestParam String date,
+                          @RequestParam(defaultValue = "PERSONAL") String scope) {
         Long userId = StpUtil.getLoginIdAsLong();
-        return statService.summary(userId, type, date);
+        return statService.summary(userId, scope, type, date);
     }
 
     @GetMapping("/category")
     public Result categoryStats(@RequestParam String type,
                                 @RequestParam String startDate,
-                                @RequestParam String endDate) {
+                                @RequestParam String endDate,
+                                @RequestParam(defaultValue = "PERSONAL") String scope) {
         Long userId = StpUtil.getLoginIdAsLong();
-        return statService.categoryStats(userId, type, startDate, endDate);
+        return statService.categoryStats(userId, scope, type, startDate, endDate);
     }
 
     @GetMapping("/trend")
     public Result trend(@RequestParam String granularity,
                         @RequestParam String startDate,
-                        @RequestParam String endDate) {
+                        @RequestParam String endDate,
+                        @RequestParam(defaultValue = "PERSONAL") String scope) {
         Long userId = StpUtil.getLoginIdAsLong();
-        return statService.trend(userId, granularity, startDate, endDate);
+        return statService.trend(userId, scope, granularity, startDate, endDate);
     }
 
     @GetMapping("/family/members")

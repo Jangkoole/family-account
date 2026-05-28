@@ -12,28 +12,33 @@ import java.util.Map;
 @Mapper
 public interface StatMapper {
 
-    @Select("SELECT " +
+    @Select("<script>" +
+            "SELECT " +
             "  COALESCE(SUM(CASE WHEN type = 'INCOME' THEN amount ELSE 0 END), 0) AS totalIncome, " +
             "  COALESCE(SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END), 0) AS totalExpense " +
             "FROM bill " +
-            "WHERE user_id = #{userId} AND date BETWEEN #{startDate} AND #{endDate}")
-    Map<String, BigDecimal> summary(@Param("userId") Long userId,
+            "WHERE user_id IN <foreach collection='userIds' item='uid' open='(' separator=',' close=')'>#{uid}</foreach>" +
+            "  AND date BETWEEN #{startDate} AND #{endDate}" +
+            "</script>")
+    Map<String, BigDecimal> summary(@Param("userIds") List<Long> userIds,
                                     @Param("startDate") LocalDate startDate,
                                     @Param("endDate") LocalDate endDate);
 
-    @Select("SELECT " +
+    @Select("<script>" +
+            "SELECT " +
             "  c.id AS categoryId, " +
             "  c.name AS categoryName, " +
             "  COALESCE(SUM(b.amount), 0) AS amount " +
             "FROM category c " +
             "LEFT JOIN bill b ON c.id = b.category_id " +
-            "  AND b.user_id = #{userId} " +
+            "  AND b.user_id IN <foreach collection='userIds' item='uid' open='(' separator=',' close=')'>#{uid}</foreach>" +
             "  AND b.date BETWEEN #{startDate} AND #{endDate} " +
             "WHERE c.type = #{type} " +
             "GROUP BY c.id, c.name " +
             "HAVING SUM(b.amount) > 0 " +
-            "ORDER BY amount DESC")
-    List<Map<String, Object>> categoryStats(@Param("userId") Long userId,
+            "ORDER BY amount DESC" +
+            "</script>")
+    List<Map<String, Object>> categoryStats(@Param("userIds") List<Long> userIds,
                                             @Param("type") String type,
                                             @Param("startDate") LocalDate startDate,
                                             @Param("endDate") LocalDate endDate);
@@ -48,12 +53,12 @@ public interface StatMapper {
             "  COALESCE(SUM(CASE WHEN b.type = 'INCOME' THEN b.amount ELSE 0 END), 0) AS income, " +
             "  COALESCE(SUM(CASE WHEN b.type = 'EXPENSE' THEN b.amount ELSE 0 END), 0) AS expense " +
             "FROM bill b " +
-            "WHERE b.user_id = #{userId} " +
+            "WHERE b.user_id IN <foreach collection='userIds' item='uid' open='(' separator=',' close=')'>#{uid}</foreach>" +
             "  AND b.date BETWEEN #{startDate} AND #{endDate} " +
             "GROUP BY statDate " +
             "ORDER BY statDate" +
             "</script>")
-    List<Map<String, Object>> trend(@Param("userId") Long userId,
+    List<Map<String, Object>> trend(@Param("userIds") List<Long> userIds,
                                     @Param("granularity") String granularity,
                                     @Param("startDate") LocalDate startDate,
                                     @Param("endDate") LocalDate endDate);

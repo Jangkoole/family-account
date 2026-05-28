@@ -17,16 +17,20 @@
           value-format="YYYY-MM-DD"
           @change="onQuery"
         />
+        <el-radio-group v-model="scope" @change="onQuery">
+          <el-radio-button value="PERSONAL">个人</el-radio-button>
+          <el-radio-button value="FAMILY">家庭</el-radio-button>
+        </el-radio-group>
       </div>
     </el-card>
 
     <div class="summary-cards">
       <el-card class="card income">
-        <div class="card-label">总收入</div>
+        <div class="card-label">{{ scope === 'FAMILY' ? '家庭总收入' : '总收入' }}</div>
         <div class="card-value">¥{{ summaryData.totalIncome }}</div>
       </el-card>
       <el-card class="card expense">
-        <div class="card-label">总支出</div>
+        <div class="card-label">{{ scope === 'FAMILY' ? '家庭总支出' : '总支出' }}</div>
         <div class="card-value">¥{{ summaryData.totalExpense }}</div>
       </el-card>
       <el-card class="card balance" :class="summaryData.balance >= 0 ? 'positive' : 'negative'">
@@ -87,6 +91,7 @@ import { getSummary, getCategoryStats, getTrend, getFamilyMemberStats } from '@/
 const timeType = ref('MONTH')
 const queryDate = ref(new Date().toISOString().slice(0, 10))
 const categoryType = ref('EXPENSE')
+const scope = ref('PERSONAL')
 
 const datePickerType = computed(() => {
   const map = { DAY: 'date', WEEK: 'week', MONTH: 'month', YEAR: 'year' }
@@ -152,7 +157,7 @@ function ensureTrendChart() {
 
 async function loadCategoryChart(start, end) {
   const ct = categoryType.value
-  const res = await getCategoryStats(ct, start, end)
+  const res = await getCategoryStats(ct, start, end, scope.value)
   await nextTick()
   ensurePieChart()
   if (res.data?.list?.length && pieChart) {
@@ -174,7 +179,7 @@ function onCategoryTypeChange() {
 
 async function loadTrendChart(start, end) {
   const gran = timeType.value === 'YEAR' ? 'MONTH' : 'DAY'
-  const res = await getTrend(gran, start, end)
+  const res = await getTrend(gran, start, end, scope.value)
   ensureTrendChart()
   if (res.data?.length && trendChart) {
     trendEmpty.value = false
@@ -197,7 +202,7 @@ async function loadTrendChart(start, end) {
 async function onQuery() {
   const { start, end } = getDateRange()
 
-  const sumRes = await getSummary(timeType.value, queryDate.value)
+  const sumRes = await getSummary(timeType.value, queryDate.value, scope.value)
   Object.assign(summaryData, sumRes.data)
 
   await Promise.all([

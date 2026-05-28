@@ -15,10 +15,11 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class StatServiceImpl implements StatService {
@@ -31,34 +32,45 @@ public class StatServiceImpl implements StatService {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+    private List<Long> resolveUserIds(Long userId, String scope) {
+        if (!"FAMILY".equalsIgnoreCase(scope)) {
+            return Collections.singletonList(userId);
+        }
+        LambdaQueryWrapper<FamilyMember> selfWrapper = new LambdaQueryWrapper<>();
+        selfWrapper.eq(FamilyMember::getUserId, userId);
+        FamilyMember self = familyMemberMapper.selectOne(selfWrapper);
+        if (self == null) {
+            return Collections.emptyList();
+        }
+        LambdaQueryWrapper<FamilyMember> memberWrapper = new LambdaQueryWrapper<>();
+        memberWrapper.eq(FamilyMember::getFamilyId, self.getFamilyId());
+        List<FamilyMember> members = familyMemberMapper.selectList(memberWrapper);
+        return members.stream().map(FamilyMember::getUserId).collect(Collectors.toList());
+    }
+
     @Override
-    public Result summary(Long userId, String type, String dateStr) {
+    public Result summary(Long userId, String scope, String type, String dateStr) {
         LocalDate date = LocalDate.parse(dateStr, DATE_FMT);
-        LocalDate startDate;
-        LocalDate endDate;
+        LocalDate startDate, endDate;
 
         switch (type.toUpperCase()) {
             case "DAY":
-                startDate = date;
-                endDate = date;
-                break;
+                startDate = date; endDate = date; break;
             case "WEEK":
-                startDate = date.with(DayOfWeek.MONDAY);
-                endDate = startDate.plusDays(6);
-                break;
+                startDate = date.with(DayOfWeek.MONDAY); endDate = startDate.plusDays(6); break;
             case "MONTH":
-                startDate = date.withDayOfMonth(1);
-                endDate = date.withDayOfMonth(date.lengthOfMonth());
-                break;
+                startDate = date.withDayOfMonth(1); endDate = date.withDayOfMonth(date.lengthOfMonth()); break;
             case "YEAR":
-                startDate = date.withDayOfYear(1);
-                endDate = date.withDayOfYear(date.lengthOfYear());
-                break;
+                startDate = date.withDayOfYear(1); endDate = date.withDayOfYear(date.lengthOfYear()); break;
             default:
                 return Result.error("type参数无效，可选值：DAY/WEEK/MONTH/YEAR");
         }
 
-        Map<String, BigDecimal> row = statMapper.summary(userId, startDate, endDate);
+        List<Long> userIds = resolveUserIds(userId, scope);
+        if (userIds.isEmpty()) {
+            return Result.error("您未加入家庭组，无法查看家庭统计");
+        }
+        Map<String, BigDecimal> row = statMapper.summary(userIds, startDate, endDate);
         BigDecimal totalIncome = row.getOrDefault("totalIncome", BigDecimal.ZERO);
         BigDecimal totalExpense = row.getOrDefault("totalExpense", BigDecimal.ZERO);
 
@@ -73,7 +85,7 @@ public class StatServiceImpl implements StatService {
     }
 
     @Override
-    public Result categoryStats(Long userId, String type, String startDateStr, String endDateStr) {
+    public Result categoryStats(Long userId, String scope, String type, String startDateStr, String endDateStr) {
         if (!"INCOME".equalsIgnoreCase(type) && !"EXPENSE".equalsIgnoreCase(type)) {
             return Result.error("type参数无效，可选值：INCOME/EXPENSE");
         }
@@ -81,7 +93,11 @@ public class StatServiceImpl implements StatService {
         LocalDate startDate = LocalDate.parse(startDateStr, DATE_FMT);
         LocalDate endDate = LocalDate.parse(endDateStr, DATE_FMT);
 
-        List<Map<String, Object>> rows = statMapper.categoryStats(userId, type.toUpperCase(), startDate, endDate);
+        List<Long> userIds = resolveUserIds(userId, scope);
+        if (userIds.isEmpty()) {
+            return Result.error("您未加入家庭组，无法查看家庭统计");
+        }
+        List<Map<String, Object>> rows = statMapper.categoryStats(userIds, type.toUpperCase(), startDate, endDate);
 
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (Map<String, Object> row : rows) {
@@ -109,7 +125,7 @@ public class StatServiceImpl implements StatService {
     }
 
     @Override
-    public Result trend(Long userId, String granularity, String startDateStr, String endDateStr) {
+    public Result trend(Long userId, String scope, String granularity, String startDateStr, String endDateStr) {
         String gran = granularity.toUpperCase();
         if (!"DAY".equals(gran) && !"WEEK".equals(gran) && !"MONTH".equals(gran)) {
             return Result.error("granularity参数无效，可选值：DAY/WEEK/MONTH");
@@ -118,7 +134,11 @@ public class StatServiceImpl implements StatService {
         LocalDate startDate = LocalDate.parse(startDateStr, DATE_FMT);
         LocalDate endDate = LocalDate.parse(endDateStr, DATE_FMT);
 
-        List<Map<String, Object>> rows = statMapper.trend(userId, gran, startDate, endDate);
+        List<Long> userIds = resolveUserIds(userId, scope);
+        if (userIds.isEmpty()) {
+            return Result.error("您未加入家庭组，无法查看家庭统计");
+        }
+        List<Map<String, Object>> rows = statMapper.trend(userIds, gran, startDate, endDate);
 
         List<TrendItemVO> list = new ArrayList<>();
         for (Map<String, Object> row : rows) {
