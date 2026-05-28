@@ -34,3 +34,7 @@ build/
 
 ## 删除包含敏感信息的 application-local.yaml
 src/main/resources/application-local.yaml
+src/main/resources/application-dev.yaml
+
+## 本地数据库初始化脚本
+init_local_db.sql

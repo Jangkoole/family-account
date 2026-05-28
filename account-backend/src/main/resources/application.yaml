@@ -5,7 +5,7 @@ spring:
   application:
     name: account
   profiles:
-    active: local # Spring Boot会自动去找application-local.yaml并把里面的配置合并进来，覆盖application.yaml的空值
+    active: dev
   datasource:
     url:
     username:
