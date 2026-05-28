@@ -4,31 +4,23 @@ server:
 spring:
   application:
     name: account
-  # 关闭 local 配置，避免冲突
   profiles:
-    active:
-  # 正确远程数据库配置（你的服务器地址）
+    active: local # Spring Boot会自动去找application-local.yaml并把里面的配置合并进来，覆盖application.yaml的空值
   datasource:
-    url: jdbc:mysql://8.153.163.48:3306/family_account?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: dev
-    password: '@Web2026'
+    url:
+    username:
+    password:
     driver-class-name: com.mysql.cj.jdbc.Driver
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
 
 mybatis-plus:
-  mapper-locations: classpath:mapper/*.xml
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     map-underscore-to-camel-case: true
 
-# 分页插件（你已经创建了配置类，这里不用重复）
-# Sa-Token
+# Sa-Token的基础配置
 sa-token:
-  token-name: Authorization
-  timeout: 86400
-  is-concurrent: true
-  is-share: false
-  token-style: uuid
+  token-name: Authorization # token传递的请求头名称，与接口文档一致
+  timeout: 86400 # token有效期，单位秒，86400 即 24 小时
+  is-concurrent: true # 是否允许统一账号多地登录
+  is-share: false # 同一账号多地登录是否共享同一个token，若共享，任一端登出后另一端也会失效
+  token-style: uuid # token生成风格，uuid格式
