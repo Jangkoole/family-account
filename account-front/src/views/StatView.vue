@@ -24,7 +24,7 @@
       </div>
     </el-card>
 
-    <div class="summary-cards">
+    <div v-if="!notInFamily" class="summary-cards">
       <el-card class="card income">
         <div class="card-label">{{ scope === 'FAMILY' ? '家庭总收入' : '总收入' }}</div>
         <div class="card-value">¥{{ summaryData.totalIncome }}</div>
@@ -39,7 +39,7 @@
       </el-card>
     </div>
 
-    <div class="charts-row">
+    <div v-if="!notInFamily" class="charts-row">
       <el-card class="chart-card">
         <template #header>
           <div class="chart-header">
@@ -60,7 +60,16 @@
       </el-card>
     </div>
 
-    <el-card v-if="familyData" class="family-card">
+    <el-card v-if="notInFamily" class="family-card">
+      <template #header>家庭成员统计</template>
+      <div class="no-family-tip">
+        <el-icon class="tip-icon" size="48" color="#E6A23C"><Warning /></el-icon>
+        <div class="tip-text">您尚未加入任何家庭组</div>
+        <div class="tip-hint">请先创建家庭或通过邀请码加入家庭，才能查看家庭统计数据</div>
+      </div>
+    </el-card>
+
+    <el-card v-else-if="familyData" class="family-card">
       <template #header>家庭成员统计</template>
       <div class="family-summary">
         <span>家庭总收入：<b>¥{{ familyData.familyTotalIncome }}</b></span>
@@ -86,6 +95,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
+import { Warning } from '@element-plus/icons-vue'
 import { getSummary, getCategoryStats, getTrend, getFamilyMemberStats } from '@/api/stat'
 
 const timeType = ref('MONTH')
@@ -108,6 +118,7 @@ let trendChart = null
 const pieEmpty = ref(true)
 const trendEmpty = ref(true)
 const familyData = ref(null)
+const notInFamily = ref(false)
 
 function getDateRange() {
   const d = new Date(queryDate.value + 'T00:00:00')
@@ -160,7 +171,7 @@ async function loadCategoryChart(start, end) {
   const res = await getCategoryStats(ct, start, end, scope.value)
   await nextTick()
   ensurePieChart()
-  if (res.data?.list?.length && pieChart) {
+  if (res.code === 200 && res.data?.list?.length && pieChart) {
     pieEmpty.value = false
     pieChart.setOption({
       tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
@@ -181,7 +192,7 @@ async function loadTrendChart(start, end) {
   const gran = timeType.value === 'YEAR' ? 'MONTH' : 'DAY'
   const res = await getTrend(gran, start, end, scope.value)
   ensureTrendChart()
-  if (res.data?.length && trendChart) {
+  if (res.code === 200 && res.data?.length && trendChart) {
     trendEmpty.value = false
     trendChart.setOption({
       tooltip: { trigger: 'axis' },
@@ -202,7 +213,27 @@ async function loadTrendChart(start, end) {
 async function onQuery() {
   const { start, end } = getDateRange()
 
+  // 重置状态
+  notInFamily.value = false
+
   const sumRes = await getSummary(timeType.value, queryDate.value, scope.value)
+  
+  // 检查是否返回错误（未加入家庭）
+  if (sumRes.code !== 200) {
+    if (sumRes.message?.includes('未加入家庭')) {
+      notInFamily.value = true
+      summaryData.totalIncome = '0.00'
+      summaryData.totalExpense = '0.00'
+      summaryData.balance = '0.00'
+      pieEmpty.value = true
+      trendEmpty.value = true
+      pieChart?.clear()
+      trendChart?.clear()
+      familyData.value = null
+    }
+    return
+  }
+
   Object.assign(summaryData, sumRes.data)
 
   await Promise.all([
@@ -210,11 +241,13 @@ async function onQuery() {
     loadTrendChart(start, end)
   ])
 
-  try {
+  if (scope.value === 'FAMILY') {
     const famRes = await getFamilyMemberStats(start, end)
-    familyData.value = famRes.data
-  } catch {
-    familyData.value = null
+    if (famRes.code === 200) {
+      familyData.value = famRes.data
+    } else {
+      familyData.value = null
+    }
   }
 }
 
@@ -252,4 +285,9 @@ window.addEventListener('resize', () => {
 
 .family-card { margin-bottom: 20px; }
 .family-summary { display: flex; gap: 24px; margin-bottom: 16px; font-size: 15px; }
+
+.no-family-tip { display: flex; flex-direction: column; align-items: center; padding: 40px; text-align: center; }
+.tip-icon { margin-bottom: 16px; }
+.tip-text { font-size: 16px; color: #606266; margin-bottom: 8px; }
+.tip-hint { font-size: 14px; color: #909399; }
 </style>

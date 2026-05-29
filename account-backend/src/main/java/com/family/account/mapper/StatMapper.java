@@ -65,18 +65,19 @@ public interface StatMapper {
 
     @Select("<script>" +
             "SELECT " +
-            "  b.user_id AS userId, " +
+            "  fm.user_id AS userId, " +
             "  u.nickname AS nickname, " +
             "  COALESCE(SUM(CASE WHEN b.type = 'INCOME' THEN b.amount ELSE 0 END), 0) AS totalIncome, " +
             "  COALESCE(SUM(CASE WHEN b.type = 'EXPENSE' THEN b.amount ELSE 0 END), 0) AS totalExpense " +
-            "FROM bill b " +
-            "JOIN user u ON b.user_id = u.id " +
-            "WHERE b.family_id = #{familyId} " +
+            "FROM family_member fm " +
+            "JOIN user u ON fm.user_id = u.id " +
+            "LEFT JOIN bill b ON fm.user_id = b.user_id " +
             "  AND b.date BETWEEN #{startDate} AND #{endDate} " +
             "  <if test='!isAdmin'>" +
             "    AND (b.user_id = #{currentUserId} OR b.visible = 'FAMILY') " +
             "  </if>" +
-            "GROUP BY b.user_id, u.nickname " +
+            "WHERE fm.family_id = #{familyId} " +
+            "GROUP BY fm.user_id, u.nickname " +
             "ORDER BY totalIncome DESC" +
             "</script>")
     List<Map<String, Object>> familyMemberStats(@Param("familyId") Long familyId,
