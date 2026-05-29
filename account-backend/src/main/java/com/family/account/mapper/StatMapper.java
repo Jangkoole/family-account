@@ -85,4 +85,29 @@ public interface StatMapper {
                                                 @Param("endDate") LocalDate endDate,
                                                 @Param("currentUserId") Long currentUserId,
                                                 @Param("isAdmin") boolean isAdmin);
+
+    // ========== 以下方法来自 feature/dashboard 分支 ==========
+
+    /**
+     * 查询家庭组整体汇总（管理员专用，可看全部）
+     */
+    @Select("SELECT " +
+            "COALESCE(SUM(CASE WHEN type = 'INCOME' THEN amount ELSE 0 END), 0) AS totalIncome, " +
+            "COALESCE(SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END), 0) AS totalExpense " +
+            "FROM bill " +
+            "WHERE family_id = #{familyId} AND date BETWEEN #{startDate} AND #{endDate}")
+    Map<String, Object> selectFamilySummaryAll(@Param("familyId") Long familyId,
+                                                @Param("startDate") LocalDate startDate,
+                                                @Param("endDate") LocalDate endDate);
+
+    /**
+     * 查询最近N条收支记录
+     */
+    @Select("SELECT b.id, b.type, c.name AS categoryName, b.amount, b.date, b.note " +
+            "FROM bill b " +
+            "JOIN category c ON b.category_id = c.id " +
+            "WHERE b.user_id = #{userId} " +
+            "ORDER BY b.date DESC, b.create_time DESC " +
+            "LIMIT #{limit}")
+    List<Map<String, Object>> selectRecentBills(@Param("userId") Long userId, @Param("limit") int limit);
 }

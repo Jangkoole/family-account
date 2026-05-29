@@ -1,4 +1,7 @@
 package com.family.account.service;
 
-public class DashboardService {
+import com.family.account.common.Result;
+
+public interface DashboardService {
+    Result getDashboardSummary(Long userId);
 }
