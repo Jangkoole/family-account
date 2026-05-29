@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.family.account.mapper.BillMapper">
+
+    <!-- 查询收支记录列表（带分类名称，返回 Map） -->
+    <select id="selectBillListWithCategory" resultType="java.util.HashMap">
+        SELECT b.*, c.name AS category_name
+        FROM bill b
+        LEFT JOIN category c ON b.category_id = c.id
+        WHERE 1=1
+        <!-- 如果是管理员，且指定了家庭组，则查看家庭组所有记录 -->
+        <if test="isAdmin == true and familyId != null">
+            AND b.family_id = #{familyId}
+        </if>
+        <!-- 如果不是管理员 -->
+        <if test="isAdmin == false">
+            <!-- 自己的所有记录 -->
+            AND ( b.user_id = #{userId}
+            <!-- 如果属于家庭组，还可以查看同一家庭中可见范围为 FAMILY 的记录 -->
+            <if test="familyId != null">
+                OR ( b.family_id = #{familyId} AND b.visible = 'FAMILY' )
+            </if>
+            )
+        </if>
+        <!-- 其他筛选条件 -->
+        <if test="startDate != null">
+            AND b.date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND b.date &lt;= #{endDate}
+        </if>
+        <if test="type != null and type != ''">
+            AND b.type = #{type}
+        </if>
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        <if test="minAmount != null">
+            AND b.amount >= #{minAmount}
+        </if>
+        <if test="maxAmount != null">
+            AND b.amount &lt;= #{maxAmount}
+        </if>
+       
+        <if test="targetUserId != null">
+            AND b.user_id = #{targetUserId}
+        </if>
+        ORDER BY b.date DESC, b.create_time DESC
+    </select>
+
+    <!-- 统计记录总数 -->
+    <select id="countBillList" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM bill b
+        WHERE 1=1
+        <if test="isAdmin == true and familyId != null">
+            AND b.family_id = #{familyId}
+        </if>
+        <if test="isAdmin == false">
+            AND ( b.user_id = #{userId}
+            <if test="familyId != null">
+                OR ( b.family_id = #{familyId} AND b.visible = 'FAMILY' )
+            </if>
+            )
+        </if>
+        <if test="startDate != null">
+            AND b.date >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND b.date &lt;= #{endDate}
+        </if>
+        <if test="type != null and type != ''">
+            AND b.type = #{type}
+        </if>
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        <if test="minAmount != null">
+            AND b.amount >= #{minAmount}
+        </if>
+        <if test="maxAmount != null">
+            AND b.amount &lt;= #{maxAmount}
+        </if>
+        <if test="targetUserId != null">
+            AND b.user_id = #{targetUserId}
+        </if>
+    </select>
+
+</mapper>

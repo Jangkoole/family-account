@@ -1,30 +1,28 @@
 <template>
   <el-container class="layout-container">
-
     <!-- 侧边栏 -->
-    <el-aside width="200px">
+    <el-aside width="200px" class="aside">
       <div class="logo">家庭记账本</div>
       <el-menu
-        :default-active="route.path"
+        :default-active="activeMenu"
+        class="menu"
         router
-        background-color="#304156"
-        text-color="#bfcbd9"
-        active-text-color="#409EFF"
+        @select="handleMenuSelect"
       >
         <el-menu-item index="/dashboard">
-          <el-icon><DataLine /></el-icon>
+          <el-icon><Odometer /></el-icon>
           <span>首页概览</span>
         </el-menu-item>
         <el-menu-item index="/bill">
-          <el-icon><List /></el-icon>
+          <el-icon><Document /></el-icon>
           <span>收支记录</span>
         </el-menu-item>
         <el-menu-item index="/stat">
-          <el-icon><PieChart /></el-icon>
+          <el-icon><DataLine /></el-icon>
           <span>统计分析</span>
         </el-menu-item>
         <el-menu-item index="/category">
-          <el-icon><Collection /></el-icon>
+          <el-icon><Folder /></el-icon>
           <span>分类管理</span>
         </el-menu-item>
         <el-menu-item index="/profile">
@@ -34,84 +32,138 @@
       </el-menu>
     </el-aside>
 
+    <!-- 主内容区 -->
     <el-container>
-      <!-- 顶部导航 -->
-      <el-header>
+      <!-- 顶部栏 -->
+      <el-header class="header">
         <div class="header-right">
-          <span>你好，{{ userStore.userInfo.nickname }}</span>
-          <el-button type="danger" text @click="handleLogout">退出登录</el-button>
+          <span class="welcome">你好，{{ nickname }}</span>
+          <el-button type="danger" size="small" @click="handleLogout">退出登录</el-button>
         </div>
       </el-header>
 
-      <!-- 主内容区 -->
-      <el-main>
-        <RouterView />
+      <!-- 内容区 -->
+      <el-main class="main">
+        <router-view />
       </el-main>
     </el-container>
-
   </el-container>
 </template>
 
 <script setup>
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { DataLine, List, PieChart, Collection, User } from '@element-plus/icons-vue'
-import { logout } from '../api/user'
-import { useUserStore } from '../stores/user'
+import { Odometer, Document, DataLine, Folder, User } from '@element-plus/icons-vue'
+import { logout, getUserInfo } from '@/api/user'
 
-const route = useRoute()
 const router = useRouter()
-const userStore = useUserStore()
+const route = useRoute()
+const nickname = ref('用户')
 
-async function handleLogout() {
-  await ElMessageBox.confirm('确认退出登录？', '提示', {
-    confirmButtonText: '确认',
-    cancelButtonText: '取消',
-    type: 'warning'
-  })
-  await logout()
-  userStore.clear()
-  ElMessage.success('已退出登录')
-  router.push('/login')
+// 当前激活菜单项
+const activeMenu = computed(() => route.path)
+
+// 获取用户信息
+const fetchUserInfo = async () => {
+  try {
+    const res = await getUserInfo()
+    if (res.code === 200) {
+      nickname.value = res.data.nickname || '用户'
+      localStorage.setItem('userInfo', JSON.stringify(res.data))
+    } else {
+      // 如果获取失败，尝试从 localStorage 读取
+      const cached = localStorage.getItem('userInfo')
+      if (cached) {
+        const user = JSON.parse(cached)
+        nickname.value = user.nickname || '用户'
+      }
+      console.warn('获取用户信息失败', res.message)
+    }
+  } catch (error) {
+    console.error('获取用户信息异常', error)
+  }
 }
+
+// 退出登录
+const handleLogout = () => {
+  ElMessageBox.confirm('确定退出登录吗？', '提示', { type: 'warning' })
+    .then(async () => {
+      try {
+        const res = await logout()
+        if (res.code === 200) {
+          localStorage.removeItem('token')
+          localStorage.removeItem('userInfo')
+          ElMessage.success('已退出登录')
+          router.push('/login')
+        } else {
+          ElMessage.error(res.message || '退出失败')
+        }
+      } catch (error) {
+        console.error(error)
+        ElMessage.error('退出请求失败')
+      }
+    })
+    .catch(() => {})
+}
+
+const handleMenuSelect = (index) => {
+  // 菜单选中时不做额外处理，router 已处理
+}
+
+onMounted(() => {
+  fetchUserInfo()
+})
 </script>
 
 <style scoped>
 .layout-container {
   height: 100vh;
 }
-
-.el-aside {
+.aside {
   background-color: #304156;
+  color: #fff;
 }
-
 .logo {
   height: 60px;
   line-height: 60px;
   text-align: center;
-  color: #fff;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: bold;
-  border-bottom: 1px solid #3f5166;
+  color: #fff;
+  background-color: #2b3a4a;
+  margin-bottom: 20px;
 }
-
-.el-header {
+.menu {
+  border-right: none;
+  background-color: #304156;
+}
+.menu :deep(.el-menu-item) {
+  color: #bfcbd9;
+}
+.menu :deep(.el-menu-item.is-active) {
+  color: #409eff;
+  background-color: #263445;
+}
+.header {
   background-color: #fff;
+  border-bottom: 1px solid #e6e6e6;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  border-bottom: 1px solid #e6e6e6;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  padding: 0 20px;
 }
-
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
-
-.el-main {
-  background-color: #f0f2f5;
+.welcome {
+  font-size: 14px;
+  color: #333;
+}
+.main {
+  background-color: #f0f2f6;
   padding: 20px;
 }
 </style>

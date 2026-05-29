@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import BillList from '@/views/bill/BillList.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -19,37 +20,17 @@ const router = createRouter({
       component: () => import('../views/LayoutView.vue'),
       redirect: '/dashboard',
       children: [
-        {
-          path: 'dashboard',
-          name: 'dashboard',
-          component: () => import('../views/DashboardView.vue')
-        },
-        {
-          path: 'profile',
-          name: 'profile',
-          component: () => import('../views/ProfileView.vue')
-        },
-        {
-          path: 'bill',
-          name: 'bill',
-          component: () => import('../views/BillView.vue')
-        },
-        {
-          path: 'stat',
-          name: 'stat',
-          component: () => import('../views/StatView.vue')
-        },
-        {
-          path: 'category',
-          name: 'category',
-          component: () => import('../views/CategoryView.vue')
-        }
+        { path: 'dashboard', name: 'dashboard', component: () => import('../views/DashboardView.vue') },
+        { path: 'profile', name: 'profile', component: () => import('../views/ProfileView.vue') },
+        { path: 'bill', name: 'bill', component: BillList, meta: { title: '账单管理' } },
+        { path: 'stat', name: 'stat', component: () => import('../views/StatView.vue') },
+        { path: 'category', name: 'category', component: () => import('../views/CategoryView.vue') }
       ]
     }
   ]
 })
 
-// 路由守卫：未登录自动跳转到登录页
+// 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   if (to.name !== 'login' && to.name !== 'register' && !token) {

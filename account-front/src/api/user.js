@@ -1,31 +1,48 @@
-import request from '../utils/request'
+// src/api/user.js
+import request from '@/utils/request'
 
-// 注册
-export function register(data) {
-    return request.post('/user/register', data)
-}
-
-// 登录
 export function login(data) {
-    return request.post('/user/login', data)
+  return request({
+    url: '/user/login',
+    method: 'post',
+    data
+  })
 }
 
-// 登出
+export function register(data) {
+  return request({
+    url: '/user/register',
+    method: 'post',
+    data
+  })
+}
+
 export function logout() {
-    return request.post('/user/logout')
+  return request({
+    url: '/user/logout',
+    method: 'post'
+  })
 }
 
-// 获取个人信息
 export function getUserInfo() {
-    return request.get('/user/info')
+  return request({
+    url: '/user/info',
+    method: 'get'
+  })
 }
 
-// 修改昵称
 export function updateNickname(data) {
-    return request.put('/user/nickname', data)
+  return request({
+    url: '/user/nickname',
+    method: 'put',
+    data
+  })
 }
 
-// 修改密码
 export function updatePassword(data) {
-    return request.put('/user/password', data)
+  return request({
+    url: '/user/password',
+    method: 'put',
+    data
+  })
 }

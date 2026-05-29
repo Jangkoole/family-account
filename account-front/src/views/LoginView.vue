@@ -1,41 +1,33 @@
 <template>
   <div class="login-container">
     <el-card class="login-card">
-      <h2>家庭记账本</h2>
-      <el-form :model="form" :rules="rules" ref="formRef">
+      <h2 class="title">家庭记账本</h2>
+      <el-form :model="loginForm" :rules="rules" ref="formRef">
         <el-form-item prop="account">
           <el-input
-            v-model="form.account"
+            v-model="loginForm.account"
             placeholder="手机号或邮箱"
             prefix-icon="User"
+            size="large"
           />
         </el-form-item>
         <el-form-item prop="password">
           <el-input
-            v-model="form.password"
+            v-model="loginForm.password"
             type="password"
             placeholder="密码"
             prefix-icon="Lock"
+            size="large"
             show-password
           />
         </el-form-item>
         <el-form-item>
-          <el-button
-            type="primary"
-            style="width: 100%"
-            :loading="loading"
-            @click="handleLogin"
-          >
+          <el-button type="primary" size="large" @click="handleLogin" :loading="loading" class="login-btn">
             登录
           </el-button>
         </el-form-item>
         <el-form-item>
-          <el-button
-            style="width: 100%"
-            @click="router.push('/register')"
-          >
-            没有账号？去注册
-          </el-button>
+          <el-link type="primary" @click="goToRegister">没有账号？去注册</el-link>
         </el-form-item>
       </el-form>
     </el-card>
@@ -43,69 +35,83 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { login } from '../api/user'
-import { useUserStore } from '../stores/user'
+import { login } from '@/api/user'
 
 const router = useRouter()
-const userStore = useUserStore()
 const formRef = ref()
 const loading = ref(false)
 
-const form = ref({
+const loginForm = reactive({
   account: '',
   password: ''
 })
 
 const rules = {
-  account: [
-    { required: true, message: '请输入账号', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' }
-  ]
+  account: [{ required: true, message: '请输入账号', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
-async function handleLogin() {
-  await formRef.value.validate(async (valid) => {
-    if (!valid) return
-    loading.value = true
-    try {
-      const res = await login(form.value)
-      if (res.code === 200) {
-        userStore.setToken(res.data.token)
-        userStore.setUserInfo({ nickname: res.data.nickname })
-        ElMessage.success('登录成功')
-        router.push('/')
-      } else {
-        ElMessage.error(res.message)
+const handleLogin = async () => {
+  try {
+    await formRef.value.validate()
+  } catch {
+    return
+  }
+
+  loading.value = true
+  try {
+    const res = await login(loginForm)
+    // 注意：我们的 request 拦截器已经返回 response.data，所以 res 就是 { code, message, data }
+    if (res.code === 200) {
+      localStorage.setItem('token', res.data.token)
+      // 保存用户信息（可选）
+      if (res.data.nickname) {
+        localStorage.setItem('userInfo', JSON.stringify({
+          nickname: res.data.nickname,
+          id: res.data.id,
+          familyId: res.data.familyId || null
+        }))
       }
-    } finally {
-      loading.value = false
+      ElMessage.success('登录成功')
+      router.push('/')
+    } else {
+      ElMessage.error(res.message || '登录失败')
     }
-  })
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('网络错误或服务器异常')
+  } finally {
+    loading.value = false
+  }
+}
+
+const goToRegister = () => {
+  router.push('/register')
 }
 </script>
 
 <style scoped>
 .login-container {
-  height: 100vh;
   display: flex;
-  align-items: center;
   justify-content: center;
-  background-color: #f0f2f5;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
-
 .login-card {
   width: 400px;
-  padding: 20px;
+  padding: 30px;
+  border-radius: 8px;
 }
-
-h2 {
+.title {
   text-align: center;
-  margin-bottom: 24px;
-  color: #303133;
+  margin-bottom: 30px;
+  color: #333;
+}
+.login-btn {
+  width: 100%;
 }
 </style>
