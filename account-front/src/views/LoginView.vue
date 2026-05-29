@@ -77,6 +77,7 @@ async function handleLogin() {
       if (res.code === 200) {
         userStore.setToken(res.data.token)
         userStore.setUserInfo({ nickname: res.data.nickname })
+        await userStore.syncFamilyInfo()
         ElMessage.success('登录成功')
         router.push('/')
       } else {

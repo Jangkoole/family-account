@@ -4,7 +4,9 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.family.account.common.Result;
 import com.family.account.dto.user.*;
+import com.family.account.entity.FamilyMember;
 import com.family.account.entity.User;
+import com.family.account.mapper.FamilyMemberMapper;
 import com.family.account.mapper.UserMapper;
 import com.family.account.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private FamilyMemberMapper familyMemberMapper;
 
     // MD5加密密码
     private String encryptPassword(String password) {
@@ -86,12 +91,17 @@ public class UserServiceImpl implements UserService {
             return Result.error("用户不存在");
         }
 
+        // 查询家庭组信息
+        LambdaQueryWrapper<FamilyMember> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FamilyMember::getUserId, userId);
+        FamilyMember member = familyMemberMapper.selectOne(wrapper);
+
         Map<String, Object> data = new HashMap<>();
         data.put("id", user.getId());
         data.put("account", user.getAccount());
         data.put("nickname", user.getNickname());
-        data.put("familyId", null);
-        data.put("familyRole", null);
+        data.put("familyId", member != null ? member.getFamilyId() : null);
+        data.put("familyRole", member != null ? member.getRole() : null);
 
         return Result.success(data);
     }
