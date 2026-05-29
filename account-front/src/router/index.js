@@ -43,6 +43,11 @@ const router = createRouter({
           path: 'category',
           name: 'category',
           component: () => import('../views/CategoryView.vue')
+        },
+        {
+          path: '/bill',
+          name: 'Bill',
+          component: () => import('@/views/BillView.vue')
         }
       ]
     }
@@ -50,12 +55,10 @@ const router = createRouter({
 })
 
 // 路由守卫：未登录自动跳转到登录页
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, from) => {
   const token = localStorage.getItem('token')
   if (to.name !== 'login' && to.name !== 'register' && !token) {
-    next({ name: 'login' })
-  } else {
-    next()
+    return { name: 'login' }
   }
 })
 
