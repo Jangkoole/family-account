@@ -2,6 +2,7 @@ package com.family.account.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,7 +20,7 @@ public class Bill {
 
     private Long categoryId;
 
-    private String type;
+    private String type;        // INCOME / EXPENSE
 
     private BigDecimal amount;
 
@@ -27,11 +28,18 @@ public class Bill {
 
     private String note;
 
-    private String visible;
+    private String visible;     // PRIVATE / FAMILY
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
+
+    // 以下两个字段为数据库不存在，仅用于查询结果映射
+    @TableField(exist = false)
+    private String categoryName;
+
+    @TableField(exist = false)
+    private String nickname;
 }

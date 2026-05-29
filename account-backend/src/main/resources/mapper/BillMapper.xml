@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.family.account.mapper.BillMapper">
+
+    <!-- 根据用户ID获取其所属家庭组ID -->
+    <select id="selectFamilyIdByUserId" resultType="java.lang.Long">
+        SELECT family_id FROM family_member WHERE user_id = #{userId}
+    </select>
+
+    <!-- 根据用户ID获取其在家庭组中的角色 -->
+    <select id="selectFamilyRoleByUserId" resultType="java.lang.String">
+        SELECT role FROM family_member WHERE user_id = #{userId}
+    </select>
+
+    <!-- 个人账单分页查询（含可见性过滤） -->
+    <select id="selectBillPage" resultType="com.family.account.entity.Bill">
+        SELECT b.*, c.name as categoryName
+        FROM bill b
+        LEFT JOIN category c ON b.category_id = c.id
+        WHERE b.user_id = #{userId}
+        <if test="familyId != null">
+            AND (b.visible = 'PRIVATE' OR b.family_id = #{familyId})
+        </if>
+        <if test="startDate != null">
+            AND b.date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND b.date &lt;= #{endDate}
+        </if>
+        <if test="type != null and type != ''">
+            AND b.type = #{type}
+        </if>
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        <if test="visible != null and visible != ''">
+            AND b.visible = #{visible}
+        </if>
+        <if test="minAmount != null">
+            AND b.amount &gt;= #{minAmount}
+        </if>
+        <if test="maxAmount != null">
+            AND b.amount &lt;= #{maxAmount}
+        </if>
+        ORDER BY b.date DESC, b.id DESC
+    </select>
+
+    <!-- 家庭管理员查询所有成员记录（仅显示家庭成员可见的记录） -->
+    <select id="selectFamilyBillPage" resultType="com.family.account.entity.Bill">
+        SELECT b.*, c.name as categoryName, u.nickname
+        FROM bill b
+        LEFT JOIN category c ON b.category_id = c.id
+        LEFT JOIN user u ON b.user_id = u.id
+        WHERE b.family_id = #{familyId}
+            AND b.visible = 'FAMILY'
+        <if test="userId != null">
+            AND b.user_id = #{userId}
+        </if>
+        <if test="startDate != null">
+            AND b.date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND b.date &lt;= #{endDate}
+        </if>
+        <if test="type != null and type != ''">
+            AND b.type = #{type}
+        </if>
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        ORDER BY b.date DESC, b.id DESC
+    </select>
+
+    <!-- 查询记录详情（含分类名称） -->
+    <select id="selectDetailById" resultType="com.family.account.entity.Bill">
+        SELECT b.*, c.name as categoryName
+        FROM bill b
+        LEFT JOIN category c ON b.category_id = c.id
+        WHERE b.id = #{id}
+    </select>
+
+</mapper>
