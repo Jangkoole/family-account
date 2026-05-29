@@ -59,6 +59,39 @@ export const getMockBillList = (params) => {
       note: '看电影',
       visible: 'PRIVATE',
       tags: ['电影']
+    },
+    {
+      id: 1006,
+      type: 'INCOME',
+      categoryId: 10,
+      categoryName: '奖金',
+      amount: 2000.00,
+      date: '2026-05-23',
+      note: '项目奖金',
+      visible: 'FAMILY',
+      tags: ['奖金']
+    },
+    {
+      id: 1007,
+      type: 'EXPENSE',
+      categoryId: 4,
+      categoryName: '住房',
+      amount: 2500.00,
+      date: '2026-05-01',
+      note: '房租',
+      visible: 'FAMILY',
+      tags: ['房租']
+    },
+    {
+      id: 1008,
+      type: 'EXPENSE',
+      categoryId: 5,
+      categoryName: '医疗',
+      amount: 150.00,
+      date: '2026-05-22',
+      note: '买药',
+      visible: 'PRIVATE',
+      tags: ['医疗']
     }
   ]
 
@@ -76,6 +109,15 @@ export const getMockBillList = (params) => {
   }
   if (params.endDate) {
     filteredList = filteredList.filter(item => item.date <= params.endDate)
+  }
+  if (params.visible) {
+    filteredList = filteredList.filter(item => item.visible === params.visible)
+  }
+  if (params.minAmount) {
+    filteredList = filteredList.filter(item => item.amount >= params.minAmount)
+  }
+  if (params.maxAmount) {
+    filteredList = filteredList.filter(item => item.amount <= params.maxAmount)
   }
 
   // 分页
@@ -122,22 +164,71 @@ export const getMockFamilyBillList = (params) => {
       date: '2026-05-25',
       note: '5月工资',
       visible: 'FAMILY'
+    },
+    {
+      id: 2003,
+      userId: 2,
+      nickname: '张三',
+      type: 'EXPENSE',
+      categoryName: '购物',
+      amount: 200.00,
+      date: '2026-05-26',
+      note: '买衣服',
+      visible: 'FAMILY'
+    },
+    {
+      id: 2004,
+      userId: 3,
+      nickname: '李四',
+      type: 'EXPENSE',
+      categoryName: '交通',
+      amount: 35.00,
+      date: '2026-05-27',
+      note: '打车',
+      visible: 'FAMILY'
     }
   ]
 
   let filteredList = [...mockList]
+
+  // 用户筛选
   if (params.userId) {
     filteredList = filteredList.filter(item => item.userId === params.userId)
   }
+  // 类型筛选
+  if (params.type) {
+    filteredList = filteredList.filter(item => item.type === params.type)
+  }
+  // 日期筛选
+  if (params.startDate) {
+    filteredList = filteredList.filter(item => item.date >= params.startDate)
+  }
+  if (params.endDate) {
+    filteredList = filteredList.filter(item => item.date <= params.endDate)
+  }
+  // 金额筛选
+  if (params.minAmount) {
+    filteredList = filteredList.filter(item => item.amount >= params.minAmount)
+  }
+  if (params.maxAmount) {
+    filteredList = filteredList.filter(item => item.amount <= params.maxAmount)
+  }
+
+  // 分页
+  const page = params.page || 1
+  const pageSize = params.pageSize || 20
+  const start = (page - 1) * pageSize
+  const end = start + pageSize
+  const pagedList = filteredList.slice(start, end)
 
   return Promise.resolve({
     code: 200,
     message: 'success',
     data: {
       total: filteredList.length,
-      page: params.page || 1,
-      pageSize: params.pageSize || 20,
-      list: filteredList
+      page: page,
+      pageSize: pageSize,
+      list: pagedList
     }
   })
 }

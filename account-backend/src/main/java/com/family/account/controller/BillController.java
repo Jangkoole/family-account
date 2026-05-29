@@ -51,24 +51,24 @@ public class BillController {
         return billService.updateVisible(dto);
     }
 
-    // 3.7 批量导入收支记录
+    // 3.7 确认导入收支记录
     @PostMapping("/import")
-    public Result importBills(@RequestParam("file") MultipartFile file,
-                              @RequestParam("source") String source) {
-        return billService.importBills(file, source);
+    public Result importBills(@RequestBody java.util.Map<String, String> body) {
+        String previewId = body.get("previewId");
+        return billService.importBills(previewId);
     }
 
     // 3.8 预览导入映射结果
     @PostMapping("/import/preview")
     public Result previewImport(@RequestParam("file") MultipartFile file,
-                                @RequestParam("source") String source) {
+            @RequestParam("source") String source) {
         return billService.previewImport(file, source);
     }
 
     // 3.9 家庭管理员查询成员记录明细
     @GetMapping("/family/list")
     public Result familyList(@Valid BillQueryDTO dto,
-                             @RequestParam(required = false) Integer userId) {
+            @RequestParam(required = false) Integer userId) {
         return billService.familyList(dto, userId);
     }
 }

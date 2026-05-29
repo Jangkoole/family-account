@@ -77,6 +77,12 @@
             <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
             <version>${mybatis-plus.version}</version>
         </dependency>
+        <!-- MyBatis-Plus 扩展模块（包含分页插件） -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-extension</artifactId>
+            <version>${mybatis-plus.version}</version>
+        </dependency>
 
         <!--登录功能用到的Sa-Token依赖-->
         <dependency>

@@ -14,6 +14,7 @@ public class BillQueryDTO {
     private String visible;     // PRIVATE / FAMILY
     private BigDecimal minAmount;
     private BigDecimal maxAmount;
+    private String orderBy;     // amount_asc / amount_desc
 
     @Min(value = 1, message = "页码从1开始")
     private Integer page = 1;
