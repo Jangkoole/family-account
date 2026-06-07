@@ -3,14 +3,14 @@
     <!-- 页面标题 -->
     <div class="page-header mb-4">
       <div class="header-left">
-        <h2>收支记录管理</h2>
-        <p class="text-muted">管理你的收支记录，查看家庭成员的共享记录</p>
+        <h1>收支记录管理</h1>
+        <!-- <p class="text-muted">管理你的收支记录，查看家庭成员的共享记录</p> -->
       </div>
       <div class="header-right">
-        <el-button v-if="activeTab !== 'family'" type="primary" size="small" @click="openAddDialog">
+        <el-button v-if="activeTab !== 'family'" type="primary" plain @click="openAddDialog">
           <el-icon><Plus /></el-icon> 新增记录
         </el-button>
-        <el-button v-if="activeTab !== 'family'" type="success" size="small" @click="openImportDialog" style="margin-left: 8px;">
+        <el-button v-if="activeTab !== 'family'" type="success" plain @click="openImportDialog" style="margin-left: 8px; --el-button-text-color: #3d7a22; --el-button-border-color: #3d7a22; --el-button-bg-color: #e8f5e0;">
           <el-icon><Upload /></el-icon> 导入记录
         </el-button>
       </div>
@@ -86,9 +86,9 @@
         <!-- 金额范围 -->
         <el-col :span="4">
           <div class="amount-range" style="display: flex; align-items: center;">
-            <el-input v-model="filters.minAmount" type="number" placeholder="最小" style="width: 45%" />
+            <el-input v-model.number="filters.minAmount" type="number" min="0" placeholder="最小" style="width: 45%" />
             <span style="margin: 0 4px;">~</span>
-            <el-input v-model="filters.maxAmount" type="number" placeholder="最大" style="width: 45%" />
+            <el-input v-model.number="filters.maxAmount" type="number" min="0" placeholder="最大" style="width: 45%" />
           </div>
         </el-col>
         
@@ -152,7 +152,14 @@
 
     <!-- 数据表格 -->
     <el-card>
-      <el-table :data="billList" stripe fit>
+      <!-- 批量操作工具栏 -->
+      <div v-if="activeTab === 'my' && selectedIds.length > 0" class="batch-toolbar">
+        <el-button type="danger" size="small" @click="confirmBatchDelete">
+          <el-icon><Delete /></el-icon> 批量删除（{{ selectedIds.length }}）
+        </el-button>
+      </div>
+      <el-table :data="billList" stripe fit @selection-change="handleSelectionChange" row-key="id" ref="tableRef">
+        <el-table-column v-if="activeTab === 'my'" type="selection" width="40" :reserve-selection="true" />
         <el-table-column label="类型" width="80" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="row.type === 'INCOME' ? 'success' : 'danger'">
@@ -254,7 +261,7 @@
         <el-form-item label="可见范围">
           <el-radio-group v-model="formData.visible">
             <el-radio value="PRIVATE">仅自己可见</el-radio>
-            <el-radio value="FAMILY">家庭成员可见</el-radio>
+            <el-radio value="FAMILY" :disabled="!userStore.familyInfo">家庭成员可见</el-radio>
           </el-radio-group>
           <div class="text-muted small">选择"家庭成员可见"后，家人可以在"家人记录"中看到此记录</div>
         </el-form-item>
@@ -267,7 +274,7 @@
     </el-dialog>
     
     <!-- 导入弹窗 -->
-    <el-dialog v-model="importDialogVisible" title="导入收支记录" width="1100px">
+    <el-dialog v-model="importDialogVisible" title="导入收支记录" width="1100px" class="import-dialog">
       <!-- 文件选择区域（预览前显示） -->
       <div v-if="previewData.totalCount === 0">
         <el-form :model="importForm" label-width="100px">
@@ -418,11 +425,13 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Collection, Upload } from '@element-plus/icons-vue'
-import { getBillList, addBill, updateBill, deleteBill, getFamilyBillList, previewImport, confirmImport } from '@/api/bill'
+import { getBillList, addBill, updateBill, deleteBill, deleteBatchBill, getFamilyBillList, previewImport, confirmImport } from '@/api/bill'
 import { getCategoryList } from '@/api/category'
 import { getMemberList } from '@/api/family'
+import { useUserStore } from '@/stores/user'
 
 // 数据
+const userStore = useUserStore()
 const billList = ref([])
 const categoryList = ref([])
 const memberList = ref([])
@@ -548,6 +557,15 @@ const fetchCategories = async () => {
 
 // 获取账单列表
 const fetchBills = async () => {
+  // 金额范围校验
+  const minVal = Number(filters.value.minAmount)
+  const maxVal = Number(filters.value.maxAmount)
+  if (filters.value.minAmount !== '' && filters.value.maxAmount !== '' && minVal > maxVal) {
+    ElMessage.warning('最小金额不能大于最大金额')
+    return
+  }
+
+  selectedIds.value = []
   try {
     let params = {
       page: page.value,
@@ -583,6 +601,10 @@ const fetchBills = async () => {
     if (res.code === 200) {
       billList.value = res.data.list || []
       total.value = res.data.total || 0
+      // 查询成功提示（仅在点击查询按钮时显示，分页时不提示）
+      if (page.value === 1 && !window._isPaging) {
+        ElMessage.success(`查询成功，共 ${total.value} 条记录`)
+      }
       // 家人记录时，从账单数据中提取家庭成员列表
       if (activeTab.value === 'family') {
         memberList.value = extractMembersFromBills(res.data.list || [])
@@ -619,6 +641,8 @@ const fetchBills = async () => {
   } catch (error) {
     console.error('获取账单失败', error)
     ElMessage.error('获取账单失败')
+  } finally {
+    window._isPaging = false
   }
 }
 
@@ -626,6 +650,12 @@ const fetchBills = async () => {
 const searchBills = () => {
   page.value = 1
   fetchBills()
+}
+
+// 滚动到页面顶部
+const scrollToTop = () => {
+  const el = document.querySelector('.el-main') || document.querySelector('.app-main') || document.documentElement
+  el.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 // 重置筛选
@@ -646,13 +676,17 @@ const resetFilters = () => {
 
 // 分页
 const handleSizeChange = (val) => {
+  window._isPaging = true
   pageSize.value = val
   page.value = 1
+  scrollToTop()
   fetchBills()
 }
 
 const handleCurrentChange = (val) => {
+  window._isPaging = true
   page.value = val
+  scrollToTop()
   fetchBills()
 }
 
@@ -666,7 +700,7 @@ const openAddDialog = () => {
     amount: null,
     date: new Date().toISOString().split('T')[0],
     note: '',
-    visible: 'PRIVATE'
+    visible: userStore.userInfo.defaultVisible || 'PRIVATE'
   }
   dialogVisible.value = true
 }
@@ -753,6 +787,42 @@ const confirmDelete = (item) => {
     } catch (error) {
       console.error('删除失败', error)
       ElMessage.error('删除失败，请重试')
+    }
+  }).catch(() => {})
+}
+
+// 批量删除
+const tableRef = ref(null)
+const selectedIds = ref([])
+
+const handleSelectionChange = (selection) => {
+  selectedIds.value = selection.map(item => item.id)
+}
+
+const confirmBatchDelete = () => {
+  if (selectedIds.value.length === 0) return
+  ElMessageBox.confirm(
+    `确定要删除选中的 ${selectedIds.value.length} 条收支记录吗？`,
+    '批量删除确认',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(async () => {
+    try {
+      const res = await deleteBatchBill(selectedIds.value)
+      if (res.code === 200) {
+        ElMessage.success(`成功删除 ${selectedIds.value.length} 条记录`)
+        selectedIds.value = []
+        tableRef.value.clearSelection()
+        fetchBills()
+      } else {
+        ElMessage.error(res.message || '批量删除失败')
+      }
+    } catch (error) {
+      console.error('批量删除失败', error)
+      ElMessage.error('批量删除失败，请重试')
     }
   }).catch(() => {})
 }
@@ -878,9 +948,12 @@ onMounted(() => {
   align-items: center;
   border-left: 4px solid #409eff;
   padding-left: 16px;
+  min-height: 40px;
 }
-.page-header h2 {
-  margin: 0 0 8px 0;
+.page-header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
 }
 .page-header p {
   margin: 0;
@@ -933,8 +1006,13 @@ onMounted(() => {
   min-width: 100px;
   text-align: center;
 }
+/* 批量操作工具栏 */
+.batch-toolbar {
+  padding: 8px 0;
+  margin-bottom: 8px;
+}
 /* 导入弹窗相对定位 */
-:deep(.el-dialog) {
+:deep(.import-dialog) {
   margin-left: calc(17vw);
 }
 </style>

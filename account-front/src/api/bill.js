@@ -36,6 +36,10 @@ export const deleteBill = (id) => {
   return request.delete(`/bill/delete/${id}`)
 }
 
+export const deleteBatchBill = (ids) => {
+  return request.delete('/bill/delete/batch', { data: ids })
+}
+
 export const getBillList = (params) => {
   if (USE_MOCK) {
     return getMockBillList(params)
@@ -83,10 +87,13 @@ export const getFamilyBillList = (params) => {
 
 export const previewImport = (data) => {
   return request.post('/bill/import/preview', data, {
-    headers: { 'Content-Type': 'multipart/form-data' }
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000
   })
 }
 
 export const confirmImport = (previewId) => {
-  return request.post('/bill/import', { previewId })
+  return request.post('/bill/import', { previewId }, {
+    timeout: 120000
+  })
 }

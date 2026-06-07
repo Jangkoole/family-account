@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.family.account.common.Result;
 import com.family.account.dto.user.*;
 import com.family.account.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,5 +53,12 @@ public class UserController {
     public Result updatePassword(@RequestBody UserUpdatePasswordDTO dto) {
         Long userId = StpUtil.getLoginIdAsLong();
         return userService.updatePassword(userId, dto);
+    }
+
+    // 修改默认可见范围
+    @PutMapping("/default-visible")
+    public Result updateDefaultVisible(@RequestBody @Valid UserUpdateDefaultVisibleDTO dto) {
+        Long userId = StpUtil.getLoginIdAsLong();
+        return userService.updateDefaultVisible(userId, dto);
     }
 }

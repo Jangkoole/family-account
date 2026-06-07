@@ -1,0 +1,29 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Qwen AI assistant
+.qwen/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CSV exports
+*.csv
+
+# Java
+target/
+*.class
+*.jar
+*.war
+*.log
+
+# Node
+node_modules/
+dist/
+
+# Env
+.env.local
+.env.*.local

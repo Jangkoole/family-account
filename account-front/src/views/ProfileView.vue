@@ -1,5 +1,18 @@
 <template>
   <div>
+    <!-- 顶部背景 -->
+    <div class="profile-banner">
+      <div class="banner-content">
+        <el-avatar :size="64" :src="userStore.userInfo.avatar" style="border: 2px solid #fff;">
+          {{ userStore.userInfo.nickname?.charAt(0) }}
+        </el-avatar>
+        <div class="banner-text">
+          <div class="banner-nickname">{{ userStore.userInfo.nickname }}</div>
+          <div class="banner-role">{{ userStore.familyRole === 'ADMIN' ? '家庭管理员' : userStore.familyInfo ? '家庭成员' : '个人用户' }}</div>
+        </div>
+      </div>
+    </div>
+
     <!-- 修改昵称 -->
     <el-card style="margin-bottom: 20px">
       <template #header>修改昵称</template>
@@ -25,6 +38,22 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="passwordLoading" @click="handleUpdatePassword">保存</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 默认可见范围 -->
+    <el-card style="margin-bottom: 20px">
+      <template #header>默认可见范围</template>
+      <el-form label-width="100px">
+        <el-form-item label="新建记录时">
+          <el-radio-group v-model="defaultVisible" @change="handleUpdateDefaultVisible">
+            <el-radio value="PRIVATE">仅自己可见</el-radio>
+            <el-radio value="FAMILY" :disabled="!userStore.familyInfo">家庭成员可见</el-radio>
+          </el-radio-group>
+          <div style="color: #909399; font-size: 12px; margin-top: 8px;">
+            （设置后，新建收支记录时默认使用此可见范围）
+          </div>
         </el-form-item>
       </el-form>
     </el-card>
@@ -146,7 +175,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { updateNickname, updatePassword } from '../api/user'
+import { updateNickname, updatePassword, updateDefaultVisible } from '../api/user'
 import {
   createFamily, joinFamily, getMemberList,
   getApplyList, reviewApply, removeMember,
@@ -193,6 +222,23 @@ const passwordRules = {
     { required: true, message: '请输入新密码', trigger: 'blur' },
     { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
   ]
+}
+
+// 默认可见范围
+const defaultVisible = ref(userStore.userInfo.defaultVisible || 'PRIVATE')
+
+async function handleUpdateDefaultVisible() {
+  try {
+    const res = await updateDefaultVisible({ defaultVisible: defaultVisible.value })
+    if (res.code === 200) {
+      userStore.setUserInfo({ ...userStore.userInfo, defaultVisible: defaultVisible.value })
+      ElMessage.success('默认可见范围已更新')
+    } else {
+      ElMessage.error(res.message)
+    }
+  } catch (e) {
+    ElMessage.error('设置失败')
+  }
 }
 
 async function handleUpdatePassword() {
@@ -383,3 +429,31 @@ async function handleDissolveFamily() {
 }
 
 </script>
+
+<style scoped>
+.profile-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  padding: 32px;
+  margin-bottom: 24px;
+  color: #fff;
+}
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.banner-nickname {
+  font-size: 20px;
+  font-weight: 600;
+}
+.banner-role {
+  font-size: 13px;
+  opacity: 0.85;
+}
+</style>

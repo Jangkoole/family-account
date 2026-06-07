@@ -1,0 +1,105 @@
+@startuml 家庭成员提议分类 - 管理员审核流程
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam participantBorderColor #4A90D9
+skinparam participantFontColor #333333
+skinparam participantBackgroundColor #E8F0FE
+skinparam arrowColor #333333
+skinparam lifeLineBorderColor #4A90D9
+skinparam lifeLineBackgroundColor #4A90D9
+
+actor "家庭成员" as Member
+actor "家庭管理员" as Admin
+boundary "前端界面" as Frontend
+control "分类控制器\nCategoryController" as Controller
+boundary "分类服务\nCategoryService" as Service
+entity "数据库\nMySQL" as DB
+
+== 阶段一：家庭成员提交分类申请 ==
+
+Member -> Frontend: 填写分类名称、收支类型\n点击"提交申请"
+activate Frontend
+
+Frontend -> Controller: POST /api/categories/apply\n{ name, type, familyId }
+activate Controller
+
+Controller -> Service: createCategoryApply(userId, dto)
+activate Service
+
+Service -> DB: INSERT INTO category_apply\n(status='PENDING')
+activate DB
+DB --> Service: 返回申请ID
+deactivate DB
+
+Service --> Controller: 返回申请记录
+deactivate Service
+
+Controller --> Frontend: 201 Created\n{ applyId, status: "PENDING" }
+deactivate Controller
+
+Frontend --> Member: 显示"申请已提交，\n等待管理员审核"
+deactivate Frontend
+
+== 阶段二：管理员查看待审核申请 ==
+
+Admin -> Frontend: 进入"分类审核"页面
+activate Frontend
+
+Frontend -> Controller: GET /api/categories/applies\n?status=PENDING&familyId={id}
+activate Controller
+
+Controller -> Service: getPendingApplies(familyId)
+activate Service
+
+Service -> DB: SELECT * FROM category_apply\nWHERE status='PENDING' AND family_id={id}
+activate DB
+DB --> Service: 返回待审核申请列表
+deactivate DB
+
+Service --> Controller: 返回申请列表
+deactivate Service
+
+Controller --> Frontend: 200 OK\n[ { applyId, name, type, proposer, createdAt }, ... ]
+deactivate Controller
+
+Frontend --> Admin: 展示待审核申请列表
+deactivate Frontend
+
+== 阶段三：管理员审核 - 通过（合并到已有分类） ==
+
+Admin -> Frontend: 选择"通过并合并到\n已有分类"
+activate Frontend
+
+Frontend -> Controller: PUT /api/categories/applies/{applyId}/approve\n{ mergeToCategoryId: xxx }
+activate Controller
+
+Controller -> Service: approveApply(applyId, mergeToCategoryId)
+activate Service
+
+' 1. 更新申请状态
+Service -> DB: UPDATE category_apply\nSET status='APPROVED',\nmerge_to_category_id={id},\nreviewed_at=NOW()
+activate DB
+DB --> Service: OK
+deactivate DB
+
+' 2. 通知申请人
+Service -> DB: INSERT INTO notification\n(userId, type, content, ...)
+activate DB
+DB --> Service: OK
+deactivate DB
+
+Service --> Controller: 返回审核结果
+deactivate Service
+
+Controller --> Frontend: 200 OK\n{ message: "审核通过，已合并" }
+deactivate Controller
+
+Frontend --> Admin: 显示"审核通过"
+deactivate Frontend
+
+== 阶段四：家庭成员收到通知 ==
+
+Frontend -> Member: 推送通知\n"您的分类申请已通过，\n已合并至【xxx】分类"
+note right: 或下次登录时拉取通知
+
+@enduml

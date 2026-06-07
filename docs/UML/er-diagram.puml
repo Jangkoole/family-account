@@ -1,0 +1,111 @@
+@startuml 家庭财务记账系统 - ER图
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam entityBorderColor #4A90D9
+skinparam entityFontColor #333333
+skinparam entityBackgroundColor #E8F0FE
+skinparam defaultFontSize 10
+skinparam entityFontSize 10
+
+' ========== 实体定义 ==========
+
+entity "user\n用户表" as user {
+  * id : BIGINT
+  --
+  * account : VARCHAR(100) UQ
+  * password : VARCHAR(255)
+  * nickname : VARCHAR(50)
+  * status : TINYINT
+  * create_time : DATETIME
+  * update_time : DATETIME
+}
+
+entity "family\n家庭组表" as family {
+  * id : BIGINT
+  --
+  * name : VARCHAR(50)
+  * admin_id : BIGINT FK
+  * invite_code : VARCHAR(20) UQ
+  * create_time : DATETIME
+  * update_time : DATETIME
+}
+
+entity "family_member\n家庭成员关系表" as family_member {
+  * id : BIGINT
+  --
+  * family_id : BIGINT FK
+  * user_id : BIGINT FK UQ
+  * role : VARCHAR(10)
+  * join_time : DATETIME
+}
+
+entity "family_apply\n加入家庭申请表" as family_apply {
+  * id : BIGINT
+  --
+  * family_id : BIGINT FK
+  * user_id : BIGINT FK
+  * status : TINYINT
+  * apply_time : DATETIME
+  review_time : DATETIME
+}
+
+entity "category\n分类表" as category {
+  * id : BIGINT
+  --
+  * name : VARCHAR(50)
+  * type : VARCHAR(10)
+  * is_system : TINYINT
+  user_id : BIGINT FK
+  family_id : BIGINT FK
+  * create_time : DATETIME
+  * update_time : DATETIME
+}
+
+entity "category_apply\n分类审核申请表" as category_apply {
+  * id : BIGINT
+  --
+  * family_id : BIGINT FK
+  * user_id : BIGINT FK
+  * category_name : VARCHAR(50)
+  * type : VARCHAR(10)
+  * status : TINYINT
+  merge_to_category_id : BIGINT FK
+  * apply_time : DATETIME
+  review_time : DATETIME
+}
+
+entity "bill\n收支记录表" as bill {
+  * id : BIGINT
+  --
+  * user_id : BIGINT FK
+  family_id : BIGINT FK
+  * category_id : BIGINT FK
+  * type : VARCHAR(10)
+  * amount : DECIMAL(12,2)
+  * date : DATE
+  note : VARCHAR(255)
+  * visible : VARCHAR(10)
+  * create_time : DATETIME
+  * update_time : DATETIME
+}
+
+' ========== 关系定义 ==========
+
+user ||--o{ family_member : "拥有"
+family ||--o{ family_member : "包含"
+
+user ||--o{ family_apply : "申请加入"
+family ||--o{ family_apply : "收到申请"
+
+user ||--o{ category : "创建"
+family ||--o{ category : "所属"
+
+user ||--o{ category_apply : "提议分类"
+family ||--o{ category_apply : "收到提议"
+category_apply }o--|| category : "合并到"
+
+user ||--o{ bill : "记录"
+family ||--o{ bill : "所属"
+category ||--o{ bill : "归类"
+
+@enduml

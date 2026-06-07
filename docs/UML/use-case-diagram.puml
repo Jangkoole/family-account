@@ -1,0 +1,85 @@
+@startuml 家庭财务记账系统 - 用例图
+!theme plain
+skinparam packageStyle rectangle
+skinparam defaultFontSize 11
+skinparam packageFontSize 12
+skinparam packageBorderThickness 1
+skinparam actorFontSize 11
+skinparam usecaseFontSize 10
+' skinparam padding/margin not supported in this theme, using CSS-equivalent settings instead
+skinparam packagePadding 5
+skinparam packageMargin 5
+left to right direction
+
+actor "未注册用户" as Unregistered
+actor "普通用户" as NormalUser
+actor "家庭成员" as FamilyMember
+actor "家庭管理员" as FamilyAdmin
+
+package "用户管理" {
+  usecase "注册账号" as UC01
+  usecase "登录系统" as UC02
+  usecase "修改个人信息" as UC03
+}
+
+package "收支分类管理" {
+  usecase "管理自定义分类" as UC04
+  usecase "提议家庭分类" as UC05
+  usecase "审核分类申请" as UC06
+  usecase "管理家庭分类" as UC07
+}
+
+package "收支记录管理" {
+  usecase "管理收支记录\n(增/删/改)" as UC08
+  usecase "查询历史记录" as UC09
+  usecase "批量导入账单" as UC10
+  usecase "设置可见范围" as UC11
+  usecase "查看所有成员记录" as UC12
+}
+
+package "汇总统计与仪表盘" {
+  usecase "查看汇总统计\n(时间/分类/成员)" as UC13
+  usecase "查看首页仪表盘" as UC14
+}
+
+package "家庭组管理" {
+  usecase "创建家庭组" as UC15
+  usecase "加入家庭组" as UC16
+  usecase "审核加入申请" as UC17
+  usecase "管理家庭成员" as UC18
+  usecase "转让管理员" as UC19
+}
+
+' 未注册用户
+Unregistered --> UC01
+Unregistered --> UC02
+
+' 普通用户
+NormalUser --> UC02
+NormalUser --> UC03
+NormalUser --> UC04
+NormalUser --> UC08
+NormalUser --> UC09
+NormalUser --> UC10
+NormalUser --> UC13
+NormalUser --> UC14
+
+' 家庭成员
+FamilyMember --> UC05
+FamilyMember --> UC11
+FamilyMember --> UC16
+
+' 家庭管理员
+FamilyAdmin --> UC06
+FamilyAdmin --> UC07
+FamilyAdmin --> UC12
+FamilyAdmin --> UC15
+FamilyAdmin --> UC17
+FamilyAdmin --> UC18
+FamilyAdmin --> UC19
+
+' 泛化关系
+FamilyAdmin -up-|> FamilyMember
+FamilyMember -up-|> NormalUser
+
+@enduml

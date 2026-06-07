@@ -33,6 +33,12 @@ public class BillController {
         return billService.delete(id);
     }
 
+    // 3.10 批量删除收支记录
+    @DeleteMapping("/delete/batch")
+    public Result deleteBatch(@RequestBody java.util.List<Long> ids) {
+        return billService.deleteBatch(ids);
+    }
+
     // 3.4 查询收支记录列表
     @GetMapping("/list")
     public Result list(@Valid BillQueryDTO dto) {

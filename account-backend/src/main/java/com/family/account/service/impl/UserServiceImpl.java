@@ -100,6 +100,7 @@ public class UserServiceImpl implements UserService {
         data.put("id", user.getId());
         data.put("account", user.getAccount());
         data.put("nickname", user.getNickname());
+        data.put("defaultVisible", user.getDefaultVisible() != null ? user.getDefaultVisible() : "PRIVATE");
         data.put("familyId", member != null ? member.getFamilyId() : null);
         data.put("familyRole", member != null ? member.getRole() : null);
 
@@ -129,6 +130,15 @@ public class UserServiceImpl implements UserService {
 
         // 更新密码
         user.setPassword(encryptPassword(dto.getNewPassword()));
+        userMapper.updateById(user);
+        return Result.success();
+    }
+
+    @Override
+    public Result updateDefaultVisible(Long userId, UserUpdateDefaultVisibleDTO dto) {
+        User user = new User();
+        user.setId(userId);
+        user.setDefaultVisible(dto.getDefaultVisible());
         userMapper.updateById(user);
         return Result.success();
     }

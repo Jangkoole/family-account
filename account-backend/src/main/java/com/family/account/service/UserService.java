@@ -16,4 +16,6 @@ public interface UserService {
     Result updateNickname(Long userId, UserUpdateNicknameDTO dto);
 
     Result updatePassword(Long userId, UserUpdatePasswordDTO dto);
+
+    Result updateDefaultVisible(Long userId, UserUpdateDefaultVisibleDTO dto);
 }

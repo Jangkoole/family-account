@@ -1,6 +1,8 @@
 <template>
   <div class="stat-container">
-    <h2>汇总统计</h2>
+    <div class="page-header">
+      <h1>汇总统计</h1>
+    </div>
 
     <el-card class="filter-card">
       <div class="filter-row">
@@ -50,13 +52,13 @@
             </el-radio-group>
           </div>
         </template>
-        <div ref="pieChartRef" class="chart-box"></div>
-        <div v-if="pieEmpty" class="chart-empty">暂无数据</div>
+        <div ref="pieChartRef" v-if="!pieEmpty" class="chart-box"></div>
+        <div v-else class="chart-empty">暂无数据</div>
       </el-card>
       <el-card class="chart-card">
         <template #header>收支趋势</template>
-        <div ref="trendChartRef" class="chart-box"></div>
-        <div v-if="trendEmpty" class="chart-empty">暂无数据</div>
+        <div ref="trendChartRef" v-if="!trendEmpty" class="chart-box"></div>
+        <div v-else class="chart-empty">暂无数据</div>
       </el-card>
     </div>
 
@@ -154,32 +156,24 @@ function getDateRange() {
   return { start: fmt(start), end: fmt(end) }
 }
 
-function ensurePieChart() {
-  if (!pieChart && pieChartRef.value) {
-    pieChart = echarts.init(pieChartRef.value)
-  }
-}
-
-function ensureTrendChart() {
-  if (!trendChart && trendChartRef.value) {
-    trendChart = echarts.init(trendChartRef.value)
-  }
-}
-
 async function loadCategoryChart(start, end) {
   const ct = categoryType.value
   const res = await getCategoryStats(ct, start, end, scope.value)
   await nextTick()
-  ensurePieChart()
-  if (res.code === 200 && res.data?.list?.length && pieChart) {
+  if (res.code === 200 && res.data?.list?.length) {
     pieEmpty.value = false
-    pieChart.setOption({
-      tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
-      series: [{ type: 'pie', radius: ['40%', '70%'], center: ['50%', '55%'], data: res.data.list.map(item => ({ name: item.categoryName, value: item.amount })) }]
-    }, true)
+    await nextTick()
+    if (pieChartRef.value) {
+      pieChart = echarts.init(pieChartRef.value)
+      pieChart.setOption({
+        tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
+        series: [{ type: 'pie', radius: ['40%', '70%'], center: ['50%', '55%'], data: res.data.list.map(item => ({ name: item.categoryName, value: item.amount })) }]
+      }, true)
+    }
   } else {
     pieEmpty.value = true
-    pieChart?.clear()
+    pieChart?.dispose()
+    pieChart = null
   }
 }
 
@@ -191,22 +185,26 @@ function onCategoryTypeChange() {
 async function loadTrendChart(start, end) {
   const gran = timeType.value === 'YEAR' ? 'MONTH' : 'DAY'
   const res = await getTrend(gran, start, end, scope.value)
-  ensureTrendChart()
-  if (res.code === 200 && res.data?.length && trendChart) {
+  if (res.code === 200 && res.data?.length) {
     trendEmpty.value = false
-    trendChart.setOption({
-      tooltip: { trigger: 'axis' },
-      legend: { data: ['收入', '支出'] },
-      xAxis: { type: 'category', data: res.data.map(d => d.date) },
-      yAxis: { type: 'value' },
-      series: [
-        { name: '收入', type: 'line', data: res.data.map(d => d.income), smooth: true, color: '#67C23A' },
-        { name: '支出', type: 'line', data: res.data.map(d => d.expense), smooth: true, color: '#F56C6C' }
-      ]
-    }, true)
+    await nextTick()
+    if (trendChartRef.value) {
+      trendChart = echarts.init(trendChartRef.value)
+      trendChart.setOption({
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['收入', '支出'] },
+        xAxis: { type: 'category', data: res.data.map(d => d.date) },
+        yAxis: { type: 'value' },
+        series: [
+          { name: '收入', type: 'line', data: res.data.map(d => d.income), smooth: true, color: '#67C23A' },
+          { name: '支出', type: 'line', data: res.data.map(d => d.expense), smooth: true, color: '#F56C6C' }
+        ]
+      }, true)
+    }
   } else {
     trendEmpty.value = true
-    trendChart?.clear()
+    trendChart?.dispose()
+    trendChart = null
   }
 }
 
@@ -227,8 +225,10 @@ async function onQuery() {
       summaryData.balance = '0.00'
       pieEmpty.value = true
       trendEmpty.value = true
-      pieChart?.clear()
-      trendChart?.clear()
+      pieChart?.dispose()
+      pieChart = null
+      trendChart?.dispose()
+      trendChart = null
       familyData.value = null
     }
     return
@@ -253,8 +253,6 @@ async function onQuery() {
 
 onMounted(async () => {
   await nextTick()
-  ensurePieChart()
-  ensureTrendChart()
   onQuery()
 })
 
@@ -266,6 +264,20 @@ window.addEventListener('resize', () => {
 
 <style scoped>
 .stat-container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+
+.page-header {
+  display: flex;
+  align-items: center;
+  border-left: 4px solid #409eff;
+  padding-left: 16px;
+  margin-bottom: 20px;
+}
+.page-header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
 .filter-card { margin-bottom: 20px; }
 .filter-row { display: flex; gap: 12px; align-items: center; }
 

@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.family.account.common.Result;
 import com.family.account.dto.bill.*;
 import com.family.account.entity.Bill;
+import com.family.account.entity.User;
 import com.family.account.mapper.BillMapper;
+import com.family.account.mapper.UserMapper;
 import com.family.account.service.BillService;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
@@ -30,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BillServiceImpl implements BillService {
 
     private final BillMapper billMapper;
+    private final UserMapper userMapper;
 
     private static final Map<String, List<Bill>> PREVIEW_DATA_CACHE = new ConcurrentHashMap<>();
 
@@ -92,9 +95,14 @@ public class BillServiceImpl implements BillService {
         bill.setDate(parseDate(dto.getDate()));
         bill.setNote(dto.getNote());
 
-        // 可见性处理：家庭成员可设置，否则默认 PRIVATE
-        if (familyId != null && dto.getVisible() != null) {
-            bill.setVisible(dto.getVisible());
+        // 可见性处理：优先使用前端传入值，否则读取用户默认可见范围
+        String visible = dto.getVisible();
+        if (visible == null || visible.isEmpty()) {
+            User user = userMapper.selectById(userId);
+            visible = user.getDefaultVisible();
+        }
+        if (familyId != null && "FAMILY".equals(visible)) {
+            bill.setVisible("FAMILY");
         } else {
             bill.setVisible("PRIVATE");
         }
@@ -118,8 +126,15 @@ public class BillServiceImpl implements BillService {
         bill.setDate(parseDate(dto.getDate()));
         bill.setNote(dto.getNote());
 
-        // 只有家庭记录且用户属于家庭组时，才允许修改可见性
-        if (bill.getFamilyId() != null && getFamilyId() != null && dto.getVisible() != null) {
+        // 修改可见性：仅当用户属于家庭组时才允许设为 FAMILY，否则只能设为 PRIVATE
+        if (dto.getVisible() != null) {
+            if ("FAMILY".equals(dto.getVisible())) {
+                Long familyId = getFamilyId();
+                if (familyId == null) {
+                    return Result.error(400, "未加入家庭组，无法设为家庭成员可见");
+                }
+                bill.setFamilyId(familyId);
+            }
             bill.setVisible(dto.getVisible());
         }
 
@@ -136,6 +151,18 @@ public class BillServiceImpl implements BillService {
             return Result.error(403, "无权删除此记录");
         }
         billMapper.deleteById(id);
+        return Result.success();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result deleteBatch(java.util.List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Result.error(400, "请选择要删除的记录");
+        }
+        Long userId = getCurrentUserId();
+        // 只删除属于当前用户的记录
+        billMapper.deleteBatchIds(ids, userId);
         return Result.success();
     }
 
@@ -211,7 +238,7 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result importBills(String previewId) {
         List<Bill> bills = PREVIEW_DATA_CACHE.remove(previewId);
         PREVIEW_CREATE_TIME.remove(previewId);
@@ -219,55 +246,81 @@ public class BillServiceImpl implements BillService {
             return Result.error(400, "预览数据已过期，请重新上传");
         }
 
-        int successCount = 0;
-        List<Map<String, Object>> failReasons = new ArrayList<>();
         Long userId = getCurrentUserId();
         Long familyId = getFamilyId();
+        List<Bill> validBills = new ArrayList<>();
+        List<Map<String, Object>> failReasons = new ArrayList<>();
 
         for (int i = 0; i < bills.size(); i++) {
-            try {
-                Bill bill = bills.get(i);
-                bill.setUserId(userId);
-                bill.setFamilyId(familyId);
+            Bill bill = bills.get(i);
+            bill.setUserId(userId);
+            bill.setFamilyId(familyId);
 
-                if (bill.getCategoryName() != null && !bill.getCategoryName().isEmpty()) {
-                    Long categoryId = getCategoryIdByName(bill.getCategoryName());
-                    if (categoryId == null) {
-                        throw new IllegalArgumentException("分类名称不存在: " + bill.getCategoryName());
-                    }
-                    bill.setCategoryId(categoryId);
-                } else {
-                    throw new IllegalArgumentException("分类名称不能为空");
-                }
-
-                if (bill.getVisible() == null || bill.getVisible().isEmpty()) {
-                    bill.setVisible("PRIVATE");
-                }
-                if (bill.getType() == null
-                        || (!bill.getType().equals("INCOME") && !bill.getType().equals("EXPENSE"))) {
-                    throw new IllegalArgumentException("收支类型错误");
-                }
-                if (bill.getAmount() == null || bill.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new IllegalArgumentException("金额必须大于0");
-                }
-                if (bill.getDate() == null) {
-                    throw new IllegalArgumentException("日期不能为空");
-                }
-                billMapper.insert(bill);
-                successCount++;
-            } catch (Exception e) {
+            String error = validateImportBill(bill, i);
+            if (error != null) {
                 Map<String, Object> fail = new LinkedHashMap<>();
                 fail.put("row", i + 2);
-                fail.put("reason", e.getMessage());
+                fail.put("reason", error);
                 failReasons.add(fail);
+            } else {
+                validBills.add(bill);
             }
         }
 
+        // 有校验失败的数据时，全部不导入
+        if (!failReasons.isEmpty()) {
+            Map<String, Object> data = new LinkedHashMap<>();
+            data.put("successCount", 0);
+            data.put("failCount", failReasons.size());
+            data.put("failReasons", failReasons);
+            return Result.success(data);
+        }
+
+        // 全部校验通过，批量插入
+        if (!validBills.isEmpty()) {
+            billMapper.insertBatch(validBills);
+        }
+
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("successCount", successCount);
-        data.put("failCount", failReasons.size());
+        data.put("successCount", validBills.size());
+        data.put("failCount", 0);
         data.put("failReasons", failReasons);
         return Result.success(data);
+    }
+
+    private String validateImportBill(Bill bill, int index) {
+        try {
+            if (bill.getCategoryName() != null && !bill.getCategoryName().isEmpty()) {
+                Long categoryId = getCategoryIdByName(bill.getCategoryName());
+                if (categoryId == null) {
+                    return "分类名称不存在: " + bill.getCategoryName();
+                }
+                bill.setCategoryId(categoryId);
+            } else {
+                return "分类名称不能为空";
+            }
+
+            if (bill.getVisible() == null || bill.getVisible().isEmpty()) {
+                bill.setVisible("PRIVATE");
+            }
+            // 没有家庭组的用户，导入的记录强制设为仅自己可见
+            if ("FAMILY".equals(bill.getVisible()) && bill.getFamilyId() == null) {
+                bill.setVisible("PRIVATE");
+            }
+            if (bill.getType() == null
+                    || (!bill.getType().equals("INCOME") && !bill.getType().equals("EXPENSE"))) {
+                return "收支类型错误";
+            }
+            if (bill.getAmount() == null || bill.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                return "金额必须大于0";
+            }
+            if (bill.getDate() == null) {
+                return "日期不能为空";
+            }
+            return null;
+        } catch (Exception e) {
+            return e.getMessage();
+        }
     }
 
     @Override
@@ -559,21 +612,134 @@ public class BillServiceImpl implements BillService {
     }
 
     /**
-     * 解析支付宝账单 CSV
-     * 假设列顺序：记录时间, 商品名称, 金额, 收支类型, 分类, 备注, ...
+     * 解析支付宝账单 CSV 或 xlsx
      */
     private List<Bill> parseAlipayCsv(MultipartFile file) throws Exception {
+        String filename = file.getOriginalFilename();
+        byte[] fileBytes = file.getBytes();
+
+        // 优先根据文件内容检测（xlsx是zip格式，开头是PK）
+        if (fileBytes.length >= 2 && fileBytes[0] == 'P' && fileBytes[1] == 'K') {
+            return parseAlipayXlsx(fileBytes);
+        }
+
+        // 其次根据扩展名检测
+        if (filename != null && (filename.toLowerCase().endsWith(".xlsx") || filename.toLowerCase().endsWith(".xls"))) {
+            return parseAlipayXlsx(fileBytes);
+        }
+
+        return parseAlipayCsvInternal(fileBytes);
+    }
+
+    /**
+     * 解析支付宝 xlsx 账单
+     */
+    private List<Bill> parseAlipayXlsx(byte[] fileBytes) throws Exception {
+        List<Bill> bills = new ArrayList<>();
+        Workbook workbook = new XSSFWorkbook(new java.io.ByteArrayInputStream(fileBytes));
+        Sheet sheet = workbook.getSheetAt(0);
+
+        // 查找表头行（包含"记录时间"或"交易时间"的行）
+        int headerRowIdx = -1;
+        for (int i = 0; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row != null) {
+                Cell cell0 = row.getCell(0);
+                String cell0Value = cell0 != null ? getCellValueAsString(cell0) : "";
+                if (cell0Value.contains("交易时间") || cell0Value.contains("记录时间")) {
+                    headerRowIdx = i;
+                    break;
+                }
+            }
+        }
+
+        if (headerRowIdx == -1) {
+            throw new Exception("未找到表头行，请确认文件格式");
+        }
+
+        // 从表头下一行开始解析数据
+        for (int i = headerRowIdx + 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) continue;
+
+            Cell cell0 = row.getCell(0);
+            if (cell0 == null) continue;
+
+            String firstCol = getCellValueAsString(cell0).trim();
+            if (firstCol.isEmpty() || firstCol.contains("交易时间") || firstCol.contains("记录时间")) {
+                continue;
+            }
+
+            Bill bill = new Bill();
+
+            // 1. 日期（第一列）
+            try {
+                LocalDate date = parseFlexibleDate(firstCol);
+                if (date != null) {
+                    bill.setDate(date);
+                } else {
+                    continue;
+                }
+            } catch (Exception e) {
+                continue;
+            }
+
+            // 2. 分类名称（第二列）
+            Cell cell1 = row.getCell(1);
+            String alipayCategory = cell1 != null ? getCellValueAsString(cell1).trim() : "";
+            bill.setCategoryName(mapAlipayCategoryToOurCategory(alipayCategory));
+
+            // 3. 金额（第四列）
+            Cell cell3 = row.getCell(3);
+            String amountStr = cell3 != null ? getCellValueAsString(cell3).trim() : "";
+            amountStr = amountStr.replace("¥", "").replace(",", "");
+            if (!amountStr.isEmpty()) {
+                bill.setAmount(new BigDecimal(amountStr));
+            }
+
+            // 4. 类型（第三列，收/支）
+            Cell cell2 = row.getCell(2);
+            String alipayType = cell2 != null ? getCellValueAsString(cell2).trim() : "";
+            if (alipayType.contains("收入")) {
+                bill.setType("INCOME");
+            } else if (alipayType.contains("支出")) {
+                bill.setType("EXPENSE");
+            } else {
+                continue;
+            }
+
+            // 5. 可见范围
+            bill.setVisible("FAMILY");
+
+            // 6. 备注（第五列）
+            Cell cell4 = row.getCell(4);
+            bill.setNote(cell4 != null ? getCellValueAsString(cell4).trim() : "");
+
+            bills.add(bill);
+        }
+
+        workbook.close();
+        return bills;
+    }
+
+    /**
+     * 解析支付宝 CSV 格式账单
+     */
+    private List<Bill> parseAlipayCsvInternal(byte[] fileBytes) throws Exception {
         List<Bill> bills = new ArrayList<>();
         String[] charsets = { "GBK", "GB18030", "UTF-8", "GB2312" };
-        byte[] fileBytes = file.getBytes();
         String correctCharset = null;
         for (String charset : charsets) {
             try {
+                // 兼容 Windows \r\n 换行符，并去除 BOM 头
                 String content = new String(fileBytes, charset);
-                String[] lines = content.split("\n");
+                if (content.length() > 0 && content.charAt(0) == '\uFEFF') {
+                    content = content.substring(1);
+                }
+                String[] lines = content.replace("\r\n", "\n").replace("\r", "\n").split("\n");
                 boolean foundHeader = false;
                 for (String line : lines) {
-                    if (line.contains("交易时间") && line.contains("交易分类")) {
+                    if (line.contains("交易时间") || line.contains("记录时间")) {
                         foundHeader = true;
                         break;
                     }
@@ -587,13 +753,18 @@ public class BillServiceImpl implements BillService {
             }
         }
         if (correctCharset == null) {
-            throw new Exception("无法识别文件编码，请确保文件是CSV格式");
+            throw new Exception("无法识别文件编码，请确保文件是CSV或xlsx格式");
         }
         String content = new String(fileBytes, correctCharset);
-        String[] lines = content.split("\n");
+        // 去除 BOM 头
+        if (content.length() > 0 && content.charAt(0) == '\uFEFF') {
+            content = content.substring(1);
+        }
+        // 兼容 Windows \r\n 换行符
+        String[] lines = content.replace("\r\n", "\n").replace("\r", "\n").split("\n");
         int headerLineIdx = -1;
         for (int i = 0; i < lines.length; i++) {
-            if (lines[i].contains("交易时间") && lines[i].contains("交易分类")) {
+            if (lines[i].contains("交易时间") || lines[i].contains("记录时间")) {
                 headerLineIdx = i;
                 break;
             }
@@ -607,11 +778,11 @@ public class BillServiceImpl implements BillService {
                 continue;
             }
             String[] fields = parseCsvLine(line, ',');
-            if (fields.length < 7 || fields[0] == null || fields[0].trim().isEmpty()) {
+            if (fields.length < 5 || fields[0] == null || fields[0].trim().isEmpty()) {
                 continue;
             }
             String firstCol = fields[0].trim();
-            if (firstCol.contains("交易时间") || firstCol.contains("日期")) {
+            if (firstCol.contains("交易时间") || firstCol.contains("记录时间") || firstCol.contains("日期")) {
                 continue;
             }
             Bill bill = new Bill();
@@ -624,13 +795,14 @@ public class BillServiceImpl implements BillService {
             } catch (Exception e) {
                 continue;
             }
+            // CSV列: 记录时间, 分类, 收支类型, 金额, 备注, 账户, 来源, 标签
             String alipayCategory = fields[1].trim();
             bill.setCategoryName(mapAlipayCategoryToOurCategory(alipayCategory));
-            String amountStr = fields[6].trim().replace("¥", "").replace(",", "");
+            String amountStr = fields[3].trim().replace("¥", "").replace(",", "");
             if (!amountStr.isEmpty()) {
                 bill.setAmount(new BigDecimal(amountStr));
             }
-            String alipayType = fields[5].trim();
+            String alipayType = fields[2].trim();
             if (alipayType.contains("收入")) {
                 bill.setType("INCOME");
             } else if (alipayType.contains("支出")) {
@@ -903,7 +1075,7 @@ public class BillServiceImpl implements BillService {
                 continue;
 
             String firstCol = getCellValueAsString(cell0).trim();
-            if (firstCol.isEmpty() || firstCol.contains("交易时间")) {
+            if (firstCol.isEmpty() || firstCol.contains("交易时间") || firstCol.contains("记录时间")) {
                 continue;
             }
 
@@ -974,7 +1146,10 @@ public class BillServiceImpl implements BillService {
         for (String charset : charsets) {
             try {
                 String content = new String(fileBytes, charset);
-                String[] lines = content.split("\n");
+                if (content.length() > 0 && content.charAt(0) == '\uFEFF') {
+                    content = content.substring(1);
+                }
+                String[] lines = content.replace("\r\n", "\n").replace("\r", "\n").split("\n");
                 boolean foundHeader = false;
                 for (String line : lines) {
                     if (line.contains("交易时间") && line.contains("收/支")) {
@@ -992,11 +1167,15 @@ public class BillServiceImpl implements BillService {
         }
 
         if (correctCharset == null) {
-            throw new Exception("无法识别文件编码，请确保文件是CSV格式");
+            throw new Exception("无法识别文件编码，请确保文件是CSV或xlsx格式");
         }
 
         String content = new String(fileBytes, correctCharset);
-        String[] lines = content.split("\n");
+        // 去除 BOM 头
+        if (content.length() > 0 && content.charAt(0) == '\uFEFF') {
+            content = content.substring(1);
+        }
+        String[] lines = content.replace("\r\n", "\n").replace("\r", "\n").split("\n");
 
         // 查找表头行（包含"交易时间"和"收/支"的行）
         int headerLineIdx = -1;
@@ -1024,7 +1203,7 @@ public class BillServiceImpl implements BillService {
             }
 
             String firstCol = fields[0].trim();
-            if (firstCol.contains("交易时间") || firstCol.contains("日期")) {
+            if (firstCol.contains("交易时间") || firstCol.contains("记录时间") || firstCol.contains("日期")) {
                 continue;
             }
 

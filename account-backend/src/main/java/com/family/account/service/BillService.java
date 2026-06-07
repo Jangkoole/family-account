@@ -12,6 +12,8 @@ public interface BillService {
 
     Result delete(Long id);
 
+    Result deleteBatch(java.util.List<Long> ids);
+
     Result list(BillQueryDTO dto);
 
     Result detail(Long id);

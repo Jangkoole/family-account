@@ -82,4 +82,14 @@ public interface BillMapper extends BaseMapper<Bill> {
      * 根据用户ID获取其在家庭组中的角色（从 family_member 表）
      */
     String selectFamilyRoleByUserId(@Param("userId") Long userId);
+
+    /**
+     * 批量插入账单记录
+     */
+    void insertBatch(@Param("list") List<Bill> list);
+
+    /**
+     * 批量删除账单记录（仅删除当前用户的）
+     */
+    void deleteBatchIds(@Param("ids") List<Long> ids, @Param("userId") Long userId);
 }

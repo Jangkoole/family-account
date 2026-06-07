@@ -192,4 +192,24 @@
         </choose>
     </select>
 
+    <!-- 批量插入账单记录 -->
+    <insert id="insertBatch">
+        INSERT INTO bill (user_id, family_id, category_id, type, amount, date, note, visible)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.userId}, #{item.familyId}, #{item.categoryId}, #{item.type},
+             #{item.amount}, #{item.date}, #{item.note}, #{item.visible})
+        </foreach>
+    </insert>
+
+    <!-- 批量删除账单记录（仅删除当前用户的） -->
+    <delete id="deleteBatchIds">
+        DELETE FROM bill
+        WHERE user_id = #{userId}
+            AND id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
 </mapper>

@@ -29,3 +29,8 @@ export function updateNickname(data) {
 export function updatePassword(data) {
     return request.put('/user/password', data)
 }
+
+// 修改默认可见范围
+export function updateDefaultVisible(data) {
+    return request.put('/user/default-visible', data)
+}

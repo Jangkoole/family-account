@@ -19,6 +19,8 @@ public class User {
 
     private Integer status;
 
+    private String defaultVisible;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
