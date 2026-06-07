@@ -42,7 +42,23 @@
         <if test="maxAmount != null">
             AND b.amount &lt;= #{maxAmount}
         </if>
-        ORDER BY b.date DESC, b.id DESC
+        <choose>
+            <when test="orderBy == 'amount_asc'">
+                ORDER BY b.amount ASC, b.id DESC
+            </when>
+            <when test="orderBy == 'amount_desc'">
+                ORDER BY b.amount DESC, b.id DESC
+            </when>
+            <when test="orderBy == 'date_asc'">
+                ORDER BY b.date ASC, b.id DESC
+            </when>
+            <when test="orderBy == 'date_desc'">
+                ORDER BY b.date DESC, b.id DESC
+            </when>
+            <otherwise>
+                ORDER BY b.date DESC, b.id DESC
+            </otherwise>
+        </choose>
     </select>
 
     <!-- 家庭管理员查询所有成员记录（仅显示家庭成员可见的记录） -->
@@ -77,6 +93,103 @@
         FROM bill b
         LEFT JOIN category c ON b.category_id = c.id
         WHERE b.id = #{id}
+    </select>
+
+    <!-- 个人账单列表查询（不带分页） -->
+    <select id="selectBillListWithoutPage" resultType="com.family.account.entity.Bill">
+        SELECT b.*, c.name as categoryName
+        FROM bill b
+        LEFT JOIN category c ON b.category_id = c.id
+        WHERE b.user_id = #{userId}
+        <if test="familyId != null">
+            AND (b.visible = 'PRIVATE' OR b.family_id = #{familyId})
+        </if>
+        <if test="startDate != null">
+            AND b.date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND b.date &lt;= #{endDate}
+        </if>
+        <if test="type != null and type != ''">
+            AND b.type = #{type}
+        </if>
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        <if test="visible != null and visible != ''">
+            AND b.visible = #{visible}
+        </if>
+        <if test="minAmount != null">
+            AND b.amount &gt;= #{minAmount}
+        </if>
+        <if test="maxAmount != null">
+            AND b.amount &lt;= #{maxAmount}
+        </if>
+        <choose>
+            <when test="orderBy == 'amount_asc'">
+                ORDER BY b.amount ASC, b.id DESC
+            </when>
+            <when test="orderBy == 'amount_desc'">
+                ORDER BY b.amount DESC, b.id DESC
+            </when>
+            <when test="orderBy == 'date_asc'">
+                ORDER BY b.date ASC, b.id DESC
+            </when>
+            <when test="orderBy == 'date_desc'">
+                ORDER BY b.date DESC, b.id DESC
+            </when>
+            <otherwise>
+                ORDER BY b.date DESC, b.id DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!-- 家庭账单列表查询（不带分页） -->
+    <select id="selectFamilyBillListWithoutPage" resultType="com.family.account.entity.Bill">
+        SELECT b.*, c.name as categoryName, u.nickname
+        FROM bill b
+        LEFT JOIN category c ON b.category_id = c.id
+        LEFT JOIN user u ON b.user_id = u.id
+        WHERE b.family_id = #{familyId}
+            AND b.visible = 'FAMILY'
+        <if test="userId != null">
+            AND b.user_id = #{userId}
+        </if>
+        <if test="startDate != null">
+            AND b.date &gt;= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND b.date &lt;= #{endDate}
+        </if>
+        <if test="type != null and type != ''">
+            AND b.type = #{type}
+        </if>
+        <if test="categoryId != null">
+            AND b.category_id = #{categoryId}
+        </if>
+        <if test="minAmount != null">
+            AND b.amount &gt;= #{minAmount}
+        </if>
+        <if test="maxAmount != null">
+            AND b.amount &lt;= #{maxAmount}
+        </if>
+        <choose>
+            <when test="orderBy == 'amount_asc'">
+                ORDER BY b.amount ASC, b.id DESC
+            </when>
+            <when test="orderBy == 'amount_desc'">
+                ORDER BY b.amount DESC, b.id DESC
+            </when>
+            <when test="orderBy == 'date_asc'">
+                ORDER BY b.date ASC, b.id DESC
+            </when>
+            <when test="orderBy == 'date_desc'">
+                ORDER BY b.date DESC, b.id DESC
+            </when>
+            <otherwise>
+                ORDER BY b.date DESC, b.id DESC
+            </otherwise>
+        </choose>
     </select>
 
 </mapper>

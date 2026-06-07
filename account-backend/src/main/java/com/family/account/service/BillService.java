@@ -18,7 +18,7 @@ public interface BillService {
 
     Result updateVisible(BillVisibleDTO dto);
 
-    Result importBills(MultipartFile file, String source);
+    Result importBills(String previewId);
 
     Result previewImport(MultipartFile file, String source);
 
