@@ -795,14 +795,10 @@ public class BillServiceImpl implements BillService {
             } catch (Exception e) {
                 continue;
             }
-            // CSV列: 记录时间, 分类, 收支类型, 金额, 备注, 账户, 来源, 标签
+            // CSV列: 交易时间,交易分类,交易对方,对方账号,商品说明,收/支,金额,收/付款方式,交易状态,交易订单号,商家订单号,备注
             String alipayCategory = fields[1].trim();
             bill.setCategoryName(mapAlipayCategoryToOurCategory(alipayCategory));
-            String amountStr = fields[3].trim().replace("¥", "").replace(",", "");
-            if (!amountStr.isEmpty()) {
-                bill.setAmount(new BigDecimal(amountStr));
-            }
-            String alipayType = fields[2].trim();
+            String alipayType = fields[5].trim();
             if (alipayType.contains("收入")) {
                 bill.setType("INCOME");
             } else if (alipayType.contains("支出")) {
@@ -810,8 +806,22 @@ public class BillServiceImpl implements BillService {
             } else {
                 continue;
             }
+            String amountStr = fields[6].trim().replace("¥", "").replace(",", "");
+            if (amountStr.isEmpty()) {
+                continue;
+            }
+            BigDecimal amount = new BigDecimal(amountStr);
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            bill.setAmount(amount);
             bill.setVisible("FAMILY");
-            bill.setNote(fields[4].trim());
+            // 备注在第12列（索引11），如果存在则取，否则取商品说明（索引4）
+            String note = fields.length > 11 ? fields[11].trim() : "";
+            if (note.isEmpty() && fields.length > 4) {
+                note = fields[4].trim();
+            }
+            bill.setNote(note);
             bills.add(bill);
         }
         return bills;
