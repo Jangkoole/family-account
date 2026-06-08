@@ -200,7 +200,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, onActivated } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { updateNickname, updatePassword, updateDefaultVisible } from '../api/user'
 import {
@@ -274,8 +274,34 @@ const createForm = ref({ name: '' })
 const joinForm = ref({ inviteCode: '' })
 
 onMounted(async () => {
-  if (userStore.familyInfo) { await loadMemberList(); if (userStore.familyRole === 'ADMIN') await loadApplyList() }
+  await refreshFamilyState()
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
+
+onActivated(async () => {
+  // 从其他页面切换回来时刷新家庭组状态
+  await refreshFamilyState()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
+
+// 页面从后台切换到前台时刷新家庭组状态
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    refreshFamilyState()
+  }
+}
+
+// 刷新家庭组状态：同步 store + 加载成员列表 + 加载申请列表
+async function refreshFamilyState() {
+  await userStore.syncFamilyInfo()
+  if (userStore.familyInfo) {
+    await loadMemberList()
+    if (userStore.familyRole === 'ADMIN') await loadApplyList()
+  }
+}
 
 async function loadMemberList() { const res = await getMemberList(); if (res.code === 200) memberList.value = res.data }
 async function loadApplyList() { const res = await getApplyList(); if (res.code === 200) applyList.value = res.data }
@@ -296,7 +322,10 @@ async function handleJoinFamily() {
     if (!valid) return; joinLoading.value = true
     try {
       const res = await joinFamily({ inviteCode: joinForm.value.inviteCode.trim() })
-      if (res.code === 200) { ElMessage.success('申请已提交，等待管理员审核'); showJoinDialog.value = false }
+      if (res.code === 200) {
+        ElMessage.success('申请已提交，等待管理员审核')
+        showJoinDialog.value = false
+      }
       else ElMessage.error(res.message)
     } finally { joinLoading.value = false }
   })
@@ -328,7 +357,15 @@ async function handleRefreshInviteCode() {
   else ElMessage.error(res.message)
 }
 
-function handleCopyInviteCode() { navigator.clipboard.writeText(userStore.familyInfo.inviteCode); ElMessage.success('邀请码已复制') }
+async function handleCopyInviteCode() {
+  try {
+    await navigator.clipboard.writeText(userStore.familyInfo.inviteCode)
+    ElMessage.success('邀请码已复制')
+  } catch {
+    // clipboard API 不可用时（非 HTTPS / 非 localhost），fallback 到选中文本
+    ElMessage.success('邀请码：' + userStore.familyInfo.inviteCode)
+  }
+}
 
 async function handleQuitFamily() {
   await ElMessageBox.confirm('确认退出家庭组？', '提示', { confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning' })

@@ -47,6 +47,9 @@ export const useUserStore = defineStore('user', () => {
                 if (userRes.code === 200) {
                     setFamilyInfo(res.data, userRes.data.familyRole)
                 }
+            } else {
+                // 不在任何家庭组中（如被移除、退出、解散），清除家庭信息
+                clearFamilyInfo()
             }
         } catch (e) {
             clearFamilyInfo()
