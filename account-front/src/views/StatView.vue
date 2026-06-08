@@ -1,10 +1,11 @@
 <template>
   <div class="stat-container">
-    <div class="page-header">
+    <div class="page-header-zh">
       <h1>汇总统计</h1>
     </div>
 
-    <el-card class="filter-card">
+    <!-- 筛选栏 -->
+    <el-card shadow="never" class="zh-card filter-card">
       <div class="filter-row">
         <el-select v-model="timeType" style="width: 120px" @change="onQuery">
           <el-option label="按日" value="DAY" />
@@ -26,26 +27,31 @@
       </div>
     </el-card>
 
+    <!-- 汇总卡片 -->
     <div v-if="!notInFamily" class="summary-cards">
-      <el-card class="card income">
-        <div class="card-label">{{ scope === 'FAMILY' ? '家庭总收入' : '总收入' }}</div>
-        <div class="card-value">¥{{ summaryData.totalIncome }}</div>
-      </el-card>
-      <el-card class="card expense">
-        <div class="card-label">{{ scope === 'FAMILY' ? '家庭总支出' : '总支出' }}</div>
-        <div class="card-value">¥{{ summaryData.totalExpense }}</div>
-      </el-card>
-      <el-card class="card balance" :class="summaryData.balance >= 0 ? 'positive' : 'negative'">
-        <div class="card-label">结余</div>
-        <div class="card-value">¥{{ summaryData.balance }}</div>
-      </el-card>
+      <div class="summary-card card-income">
+        <div class="sc-label">{{ scope === 'FAMILY' ? '家庭总收入' : '总收入' }}</div>
+        <div class="sc-value income">¥{{ summaryData.totalIncome }}</div>
+      </div>
+      <div class="summary-card card-expense">
+        <div class="sc-label">{{ scope === 'FAMILY' ? '家庭总支出' : '总支出' }}</div>
+        <div class="sc-value expense">¥{{ summaryData.totalExpense }}</div>
+      </div>
+      <div class="summary-card card-balance" :class="summaryData.balance >= 0 ? 'positive' : 'negative'">
+        <div class="sc-label">结余</div>
+        <div class="sc-value" :class="summaryData.balance >= 0 ? 'income' : 'expense'">¥{{ summaryData.balance }}</div>
+      </div>
     </div>
 
+    <!-- 图表 -->
     <div v-if="!notInFamily" class="charts-row">
-      <el-card class="chart-card">
+      <el-card shadow="never" class="zh-card chart-card">
         <template #header>
-          <div class="chart-header">
-            <span>分类占比</span>
+          <div class="chart-header-zh">
+            <div class="ch-left">
+              <span class="header-dot"></span>
+              <span>分类占比</span>
+            </div>
             <el-radio-group v-model="categoryType" size="small" @change="onCategoryTypeChange">
               <el-radio-button value="EXPENSE">支出</el-radio-button>
               <el-radio-button value="INCOME">收入</el-radio-button>
@@ -55,27 +61,46 @@
         <div ref="pieChartRef" v-if="!pieEmpty" class="chart-box"></div>
         <div v-else class="chart-empty">暂无数据</div>
       </el-card>
-      <el-card class="chart-card">
-        <template #header>收支趋势</template>
+
+      <el-card shadow="never" class="zh-card chart-card">
+        <template #header>
+          <div class="ch-left">
+            <span class="header-dot"></span>
+            <span>收支趋势</span>
+          </div>
+        </template>
         <div ref="trendChartRef" v-if="!trendEmpty" class="chart-box"></div>
         <div v-else class="chart-empty">暂无数据</div>
       </el-card>
     </div>
 
-    <el-card v-if="notInFamily" class="family-card">
-      <template #header>家庭成员统计</template>
+    <!-- 家庭统计 -->
+    <el-card v-if="notInFamily" shadow="never" class="zh-card family-card">
+      <template #header>
+        <div class="ch-left">
+          <span class="header-dot"></span>
+          <span>家庭成员统计</span>
+        </div>
+      </template>
       <div class="no-family-tip">
-        <el-icon class="tip-icon" size="48" color="#E6A23C"><Warning /></el-icon>
+        <div class="tip-seal">!</div>
         <div class="tip-text">您尚未加入任何家庭组</div>
         <div class="tip-hint">请先创建家庭或通过邀请码加入家庭，才能查看家庭统计数据</div>
       </div>
     </el-card>
 
-    <el-card v-else-if="familyData" class="family-card">
-      <template #header>家庭成员统计</template>
+    <el-card v-else-if="familyData" shadow="never" class="zh-card family-card">
+      <template #header>
+        <div class="ch-left">
+          <span class="header-dot"></span>
+          <span>家庭成员统计</span>
+        </div>
+      </template>
       <div class="family-summary">
-        <span>家庭总收入：<b>¥{{ familyData.familyTotalIncome }}</b></span>
-        <span>家庭总支出：<b>¥{{ familyData.familyTotalExpense }}</b></span>
+        <span>家庭总收入：<b class="income">¥{{ familyData.familyTotalIncome }}</b></span>
+        <span class="summary-divider">|</span>
+        <span>家庭总支出：<b class="expense">¥{{ familyData.familyTotalExpense }}</b></span>
+        <span class="summary-divider">|</span>
         <span>家庭结余：<b>¥{{ familyData.familyBalance }}</b></span>
       </div>
       <el-table :data="familyData.members" stripe>
@@ -97,7 +122,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
-import { Warning } from '@element-plus/icons-vue'
 import { getSummary, getCategoryStats, getTrend, getFamilyMemberStats } from '@/api/stat'
 
 const timeType = ref('MONTH')
@@ -122,6 +146,8 @@ const trendEmpty = ref(true)
 const familyData = ref(null)
 const notInFamily = ref(false)
 
+const ZH_COLORS = ['#C4342E', '#B8860B', '#4A7C59', '#8B7D6B', '#D4544E', '#C9A96E', '#6B9E7A', '#A89880']
+
 function getDateRange() {
   const d = new Date(queryDate.value + 'T00:00:00')
   const fmt = date => {
@@ -132,9 +158,7 @@ function getDateRange() {
   }
   let start, end
   switch (timeType.value) {
-    case 'DAY':
-      start = end = d
-      break
+    case 'DAY': start = end = d; break
     case 'WEEK': {
       const dayOfWeek = d.getDay()
       const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
@@ -142,16 +166,9 @@ function getDateRange() {
       end = new Date(start); end.setDate(start.getDate() + 6)
       break
     }
-    case 'MONTH':
-      start = new Date(d.getFullYear(), d.getMonth(), 1)
-      end = new Date(d.getFullYear(), d.getMonth() + 1, 0)
-      break
-    case 'YEAR':
-      start = new Date(d.getFullYear(), 0, 1)
-      end = new Date(d.getFullYear(), 11, 31)
-      break
-    default:
-      start = end = d
+    case 'MONTH': start = new Date(d.getFullYear(), d.getMonth(), 1); end = new Date(d.getFullYear(), d.getMonth() + 1, 0); break
+    case 'YEAR': start = new Date(d.getFullYear(), 0, 1); end = new Date(d.getFullYear(), 11, 31); break
+    default: start = end = d
   }
   return { start: fmt(start), end: fmt(end) }
 }
@@ -166,15 +183,17 @@ async function loadCategoryChart(start, end) {
     if (pieChartRef.value) {
       pieChart = echarts.init(pieChartRef.value)
       pieChart.setOption({
-        tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
-        series: [{ type: 'pie', radius: ['40%', '70%'], center: ['50%', '55%'], data: res.data.list.map(item => ({ name: item.categoryName, value: item.amount })) }]
+        color: ZH_COLORS,
+        tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)', backgroundColor: '#fffdf8', borderColor: '#E8D5B7', textStyle: { color: '#2c2416' } },
+        series: [{
+          type: 'pie', radius: ['40%', '70%'], center: ['50%', '55%'],
+          itemStyle: { borderRadius: 4, borderColor: '#fffdf8', borderWidth: 3 },
+          label: { formatter: '{b}\n{d}%', fontSize: 11, color: '#3d3226' },
+          data: res.data.list.map(item => ({ name: item.categoryName, value: item.amount }))
+        }]
       }, true)
     }
-  } else {
-    pieEmpty.value = true
-    pieChart?.dispose()
-    pieChart = null
-  }
+  } else { pieEmpty.value = true; pieChart?.dispose(); pieChart = null }
 }
 
 function onCategoryTypeChange() {
@@ -191,115 +210,161 @@ async function loadTrendChart(start, end) {
     if (trendChartRef.value) {
       trendChart = echarts.init(trendChartRef.value)
       trendChart.setOption({
-        tooltip: { trigger: 'axis' },
-        legend: { data: ['收入', '支出'] },
-        xAxis: { type: 'category', data: res.data.map(d => d.date) },
-        yAxis: { type: 'value' },
+        tooltip: { trigger: 'axis', backgroundColor: '#fffdf8', borderColor: '#E8D5B7', textStyle: { color: '#2c2416' } },
+        legend: { data: ['收入', '支出'], textStyle: { color: '#3d3226' }, top: 0 },
+        grid: { top: 40, left: 10, right: 20, bottom: 0, containLabel: true },
+        xAxis: { type: 'category', data: res.data.map(d => d.date), axisLine: { lineStyle: { color: '#E8D5B7' } }, axisTick: { show: false }, axisLabel: { color: '#8B7D6B' } },
+        yAxis: { type: 'value', axisLabel: { color: '#8B7D6B' }, splitLine: { lineStyle: { color: '#F0EBE0' } } },
         series: [
-          { name: '收入', type: 'line', data: res.data.map(d => d.income), smooth: true, color: '#67C23A' },
-          { name: '支出', type: 'line', data: res.data.map(d => d.expense), smooth: true, color: '#F56C6C' }
+          { name: '收入', type: 'line', data: res.data.map(d => d.income), smooth: true, symbol: 'circle', symbolSize: 6, lineStyle: { color: '#4A7C59', width: 2.5 }, itemStyle: { color: '#4A7C59' }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(74, 124, 89, 0.2)' }, { offset: 1, color: 'rgba(74, 124, 89, 0.02)' }]) } },
+          { name: '支出', type: 'line', data: res.data.map(d => d.expense), smooth: true, symbol: 'circle', symbolSize: 6, lineStyle: { color: '#C4342E', width: 2.5 }, itemStyle: { color: '#C4342E' }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(196, 52, 46, 0.2)' }, { offset: 1, color: 'rgba(196, 52, 46, 0.02)' }]) } }
         ]
       }, true)
     }
-  } else {
-    trendEmpty.value = true
-    trendChart?.dispose()
-    trendChart = null
-  }
+  } else { trendEmpty.value = true; trendChart?.dispose(); trendChart = null }
 }
 
 async function onQuery() {
   const { start, end } = getDateRange()
-
-  // 重置状态
   notInFamily.value = false
-
   const sumRes = await getSummary(timeType.value, queryDate.value, scope.value)
-  
-  // 检查是否返回错误（未加入家庭）
   if (sumRes.code !== 200) {
     if (sumRes.message?.includes('未加入家庭')) {
-      notInFamily.value = true
-      summaryData.totalIncome = '0.00'
-      summaryData.totalExpense = '0.00'
-      summaryData.balance = '0.00'
-      pieEmpty.value = true
-      trendEmpty.value = true
-      pieChart?.dispose()
-      pieChart = null
-      trendChart?.dispose()
-      trendChart = null
-      familyData.value = null
+      notInFamily.value = true; summaryData.totalIncome = '0.00'; summaryData.totalExpense = '0.00'; summaryData.balance = '0.00'
+      pieEmpty.value = true; trendEmpty.value = true
+      pieChart?.dispose(); pieChart = null; trendChart?.dispose(); trendChart = null; familyData.value = null
     }
     return
   }
-
   Object.assign(summaryData, sumRes.data)
-
-  await Promise.all([
-    loadCategoryChart(start, end),
-    loadTrendChart(start, end)
-  ])
-
+  await Promise.all([loadCategoryChart(start, end), loadTrendChart(start, end)])
   if (scope.value === 'FAMILY') {
     const famRes = await getFamilyMemberStats(start, end)
-    if (famRes.code === 200) {
-      familyData.value = famRes.data
-    } else {
-      familyData.value = null
-    }
+    if (famRes.code === 200) familyData.value = famRes.data
+    else familyData.value = null
   }
 }
 
-onMounted(async () => {
-  await nextTick()
-  onQuery()
-})
+onMounted(async () => { await nextTick(); onQuery() })
 
-window.addEventListener('resize', () => {
-  pieChart?.resize()
-  trendChart?.resize()
-})
+window.addEventListener('resize', () => { pieChart?.resize(); trendChart?.resize() })
 </script>
 
 <style scoped>
-.stat-container { padding: 20px; max-width: 1200px; margin: 0 auto; }
+.stat-container { max-width: 1200px; margin: 0 auto; }
 
-.page-header {
+.page-header-zh {
   display: flex;
   align-items: center;
-  border-left: 4px solid #409eff;
-  padding-left: 16px;
+  gap: 12px;
   margin-bottom: 20px;
 }
-.page-header h1 {
+.page-header-zh h1 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink-black);
+  letter-spacing: 2px;
   margin: 0;
-  font-size: 20px;
-  font-weight: 600;
+}
+.page-header-zh::before {
+  content: '';
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(180deg, var(--cinnabar) 0%, var(--gold) 100%);
+  border-radius: 2px;
 }
 
+.zh-card {
+  background: #fffdf8;
+  border: 1px solid var(--gold-pale);
+  border-radius: var(--radius-md);
+}
 .filter-card { margin-bottom: 20px; }
+.filter-card .el-card__body { padding: 20px; }
 .filter-row { display: flex; gap: 12px; align-items: center; }
 
-.summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
-.card { text-align: center; }
-.card-label { font-size: 14px; color: #909399; margin-bottom: 8px; }
-.card-value { font-size: 28px; font-weight: bold; }
-.card.income .card-value { color: #67C23A; }
-.card.expense .card-value { color: #F56C6C; }
-.card.balance.positive .card-value { color: #409EFF; }
-.card.balance.negative .card-value { color: #F56C6C; }
+/* 汇总卡片 */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.summary-card {
+  background: #fffdf8;
+  border: 1px solid var(--gold-pale);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+.summary-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.sc-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+.sc-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.income { color: #4A7C59; }
+.expense { color: #C4342E; }
 
-.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-.chart-header { display: flex; justify-content: space-between; align-items: center; }
+/* 图表 */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.chart-card { min-height: 420px; }
 .chart-box { width: 100%; height: 350px; }
-.chart-empty { display: flex; align-items: center; justify-content: center; height: 350px; color: #909399; }
+.chart-empty {
+  display: flex; align-items: center; justify-content: center;
+  height: 350px; color: var(--text-secondary); font-size: 14px;
+}
+.chart-header-zh {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.ch-left {
+  display: flex; align-items: center; gap: 10px;
+}
+.header-dot {
+  width: 8px; height: 8px; background: var(--cinnabar); border-radius: 50%; flex-shrink: 0;
+}
 
+/* 家庭统计 */
 .family-card { margin-bottom: 20px; }
-.family-summary { display: flex; gap: 24px; margin-bottom: 16px; font-size: 15px; }
+.family-summary {
+  display: flex; gap: 16px; align-items: center; margin-bottom: 16px;
+  font-size: 15px; color: var(--text-regular);
+}
+.summary-divider { color: var(--gold-pale); }
 
-.no-family-tip { display: flex; flex-direction: column; align-items: center; padding: 40px; text-align: center; }
-.tip-icon { margin-bottom: 16px; }
-.tip-text { font-size: 16px; color: #606266; margin-bottom: 8px; }
-.tip-hint { font-size: 14px; color: #909399; }
+.no-family-tip {
+  display: flex; flex-direction: column; align-items: center; padding: 40px; text-align: center;
+}
+.tip-seal {
+  width: 48px; height: 48px; border: 2px solid #B8860B; border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  color: #B8860B; font-family: var(--font-display); font-weight: 900; font-size: 22px;
+  transform: rotate(-6deg); margin-bottom: 16px;
+}
+.tip-text { font-size: 16px; color: var(--text-regular); margin-bottom: 8px; }
+.tip-hint { font-size: 14px; color: var(--text-secondary); }
+
+@media (max-width: 768px) {
+  .summary-cards, .charts-row { grid-template-columns: 1fr; }
+  .family-summary { flex-direction: column; align-items: flex-start; }
+}
 </style>
