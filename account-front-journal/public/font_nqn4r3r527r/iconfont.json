@@ -1,0 +1,30 @@
+{
+  "id": "",
+  "name": "",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "15077423",
+      "name": "分类",
+      "font_class": "fenlei",
+      "unicode": "e638",
+      "unicode_decimal": 58936
+    },
+    {
+      "icon_id": "26293653",
+      "name": "下载示例数据",
+      "font_class": "xiazaishilishuju",
+      "unicode": "e8c8",
+      "unicode_decimal": 59592
+    },
+    {
+      "icon_id": "31019440",
+      "name": "导入格式_upload",
+      "font_class": "daorugeshi_upload",
+      "unicode": "e6ad",
+      "unicode_decimal": 59053
+    }
+  ]
+}

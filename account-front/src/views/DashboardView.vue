@@ -1,116 +1,117 @@
 <template>
   <div class="dashboard">
-    <!-- 本月概览卡片 -->
-    <el-row :gutter="20" class="summary-cards">
-      <el-col :span="8">
-        <el-card shadow="hover" class="income-card">
-          <div class="card-content">
-            <div class="card-label">本月收入</div>
-            <div class="card-value income">¥{{ formatMoney(monthSummary.totalIncome) }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="hover" class="expense-card">
-          <div class="card-content">
-            <div class="card-label">本月支出</div>
-            <div class="card-value expense">¥{{ formatMoney(monthSummary.totalExpense) }}</div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="hover" class="balance-card">
-          <div class="card-content">
-            <div class="card-label">本月结余</div>
-            <div class="card-value" :class="balanceClass">¥{{ formatMoney(monthSummary.balance) }}</div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
 
-    <!-- 家庭概况（仅家庭成员可见） -->
-    <el-row :gutter="20" class="family-summary" v-if="familySummary">
-      <el-col :span="24">
-        <el-card shadow="hover">
-          <template #header>
-            <span class="section-title">家庭本月概况</span>
-          </template>
-          <el-row :gutter="20">
-            <el-col :span="8">
-              <div class="family-stat-item">
-                <div class="stat-label">家庭总收入</div>
-                <div class="stat-value income">¥{{ formatMoney(familySummary.familyTotalIncome) }}</div>
-              </div>
-            </el-col>
-            <el-col :span="8">
-              <div class="family-stat-item">
-                <div class="stat-label">家庭总支出</div>
-                <div class="stat-value expense">¥{{ formatMoney(familySummary.familyTotalExpense) }}</div>
-              </div>
-            </el-col>
-            <el-col :span="8">
-              <div class="family-stat-item">
-                <div class="stat-label">家庭结余</div>
-                <div class="stat-value" :class="familyBalanceClass">¥{{ formatMoney(familySummary.familyBalance) }}</div>
-              </div>
-            </el-col>
-          </el-row>
-        </el-card>
-      </el-col>
-    </el-row>
+    <!-- 页面标题 -->
+    <div class="page-header-zh">
+      <h1>首页概览</h1>
+    </div>
+
+    <!-- 本月概览卡片 -->
+    <div class="summary-cards">
+      <div class="summary-card card-income card-enter">
+        <div class="card-decoration"></div>
+        <div class="card-inner">
+          <div class="card-label">本月收入</div>
+          <div class="card-value income">¥{{ formatMoney(monthSummary.totalIncome) }}</div>
+        </div>
+      </div>
+      <div class="summary-card card-expense card-enter">
+        <div class="card-decoration"></div>
+        <div class="card-inner">
+          <div class="card-label">本月支出</div>
+          <div class="card-value expense">¥{{ formatMoney(monthSummary.totalExpense) }}</div>
+        </div>
+      </div>
+      <div class="summary-card card-balance card-enter">
+        <div class="card-decoration"></div>
+        <div class="card-inner">
+          <div class="card-label">本月结余</div>
+          <div class="card-value" :class="balanceClass">¥{{ formatMoney(monthSummary.balance) }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 家庭概况 -->
+    <div v-if="familySummary" class="family-section card-enter">
+      <el-card shadow="never" class="zh-card">
+        <template #header>
+          <div class="card-header-zh">
+            <span class="header-dot"></span>
+            <span>家庭本月概况</span>
+          </div>
+        </template>
+        <div class="family-stats">
+          <div class="family-stat-item">
+            <span class="fs-label">家庭总收入</span>
+            <span class="fs-value income">¥{{ formatMoney(familySummary.familyTotalIncome) }}</span>
+          </div>
+          <div class="family-stat-divider"></div>
+          <div class="family-stat-item">
+            <span class="fs-label">家庭总支出</span>
+            <span class="fs-value expense">¥{{ formatMoney(familySummary.familyTotalExpense) }}</span>
+          </div>
+          <div class="family-stat-divider"></div>
+          <div class="family-stat-item">
+            <span class="fs-label">家庭结余</span>
+            <span class="fs-value" :class="familyBalanceClass">¥{{ formatMoney(familySummary.familyBalance) }}</span>
+          </div>
+        </div>
+      </el-card>
+    </div>
 
     <!-- 图表区域 -->
-    <el-row :gutter="20" class="chart-row">
-      <!-- 分类支出占比饼图 -->
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>
-            <span class="section-title">本月支出分类占比</span>
-          </template>
-          <div ref="pieChartRef" class="chart-container"></div>
-        </el-card>
-      </el-col>
-      <!-- 最近一周收支趋势折线图 -->
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>
-            <span class="section-title">最近一周收支趋势</span>
-          </template>
-          <div ref="lineChartRef" class="chart-container"></div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="charts-row">
+      <el-card shadow="never" class="zh-card chart-card card-enter">
+        <template #header>
+          <div class="card-header-zh">
+            <span class="header-dot"></span>
+            <span>本月支出分类占比</span>
+          </div>
+        </template>
+        <div ref="pieChartRef" class="chart-container"></div>
+      </el-card>
+
+      <el-card shadow="never" class="zh-card chart-card card-enter">
+        <template #header>
+          <div class="card-header-zh">
+            <span class="header-dot"></span>
+            <span>最近一周收支趋势</span>
+          </div>
+        </template>
+        <div ref="lineChartRef" class="chart-container"></div>
+      </el-card>
+    </div>
 
     <!-- 最近收支记录 -->
-    <el-row :gutter="20" class="recent-row">
-      <el-col :span="24">
-        <el-card shadow="hover">
-          <template #header>
-            <span class="section-title">最近收支记录</span>
+    <el-card shadow="never" class="zh-card card-enter">
+      <template #header>
+        <div class="card-header-zh">
+          <span class="header-dot"></span>
+          <span>最近收支记录</span>
+        </div>
+      </template>
+      <el-table :data="recentBills" stripe style="width: 100%" v-if="recentBills.length > 0">
+        <el-table-column prop="date" label="日期" width="120" />
+        <el-table-column prop="categoryName" label="分类" width="120" />
+        <el-table-column prop="type" label="类型" width="80" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.type === 'INCOME' ? 'success' : 'danger'" size="small" effect="light">
+              {{ row.type === 'INCOME' ? '收入' : '支出' }}
+            </el-tag>
           </template>
-          <el-table :data="recentBills" stripe style="width: 100%" v-if="recentBills.length > 0">
-            <el-table-column prop="date" label="日期" width="120" />
-            <el-table-column prop="categoryName" label="分类" width="120" />
-            <el-table-column prop="type" label="类型" width="80">
-              <template #default="{ row }">
-                <el-tag :type="row.type === 'INCOME' ? 'success' : 'danger'" size="small">
-                  {{ row.type === 'INCOME' ? '收入' : '支出' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="amount" label="金额" width="120">
-              <template #default="{ row }">
-                <span :class="row.type === 'INCOME' ? 'income' : 'expense'">
-                  {{ row.type === 'INCOME' ? '+' : '-' }}¥{{ formatMoney(row.amount) }}
-                </span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="note" label="备注" />
-          </el-table>
-          <el-empty description="暂无收支记录" v-else />
-        </el-card>
-      </el-col>
-    </el-row>
+        </el-table-column>
+        <el-table-column prop="amount" label="金额" width="120" align="right">
+          <template #default="{ row }">
+            <span :class="row.type === 'INCOME' ? 'income' : 'expense'" class="amount-display">
+              {{ row.type === 'INCOME' ? '+' : '-' }}¥{{ formatMoney(row.amount) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="note" label="备注" min-width="150" />
+      </el-table>
+      <el-empty description="暂无收支记录" v-else />
+    </el-card>
+
   </div>
 </template>
 
@@ -122,11 +123,7 @@ import * as echarts from 'echarts'
 
 const userStore = useUserStore()
 
-const monthSummary = ref({
-  totalIncome: 0,
-  totalExpense: 0,
-  balance: 0
-})
+const monthSummary = ref({ totalIncome: 0, totalExpense: 0, balance: 0 })
 const categoryChart = ref([])
 const trendChart = ref([])
 const recentBills = ref([])
@@ -146,16 +143,20 @@ const balanceClass = computed(() => {
 
 const familyBalanceClass = computed(() => {
   if (!familySummary.value) return ''
-  const b = familySummary.value.familyBalance
-  if (b > 0) return 'income'
-  if (b < 0) return 'expense'
-  return ''
+  return familySummary.value.familyBalance >= 0 ? 'income' : 'expense'
 })
 
 function formatMoney(value) {
   if (value === null || value === undefined) return '0.00'
   return Number(value).toFixed(2)
 }
+
+/* 新中式 ECharts 配色 */
+const ZH_COLORS = [
+  '#C4342E', '#B8860B', '#4A7C59', '#8B7D6B',
+  '#D4544E', '#C9A96E', '#6B9E7A', '#A89880',
+  '#E0706A', '#D4B87A', '#8DB59A', '#C4B5A0'
+]
 
 function initCharts() {
   // 饼图
@@ -166,32 +167,37 @@ function initCharts() {
           name: item.categoryName,
           value: item.amount
         }))
-      : [{ name: '暂无数据', value: 1 }]
+      : [{ name: '暂无数据', value: 1, itemStyle: { color: '#E8D5B7' } }]
 
     pieChartInstance.setOption({
+      color: ZH_COLORS,
       tooltip: {
         trigger: 'item',
-        formatter: '{b}: ¥{c} ({d}%)'
+        formatter: '{b}: ¥{c} ({d}%)',
+        backgroundColor: '#fffdf8',
+        borderColor: '#E8D5B7',
+        textStyle: { color: '#2c2416', fontFamily: 'Noto Sans SC' }
       },
       series: [{
         type: 'pie',
-        radius: ['40%', '70%'],
+        radius: ['45%', '75%'],
+        center: ['50%', '55%'],
         avoidLabelOverlap: true,
         itemStyle: {
-          borderRadius: 6,
-          borderColor: '#fff',
-          borderWidth: 2
+          borderRadius: 4,
+          borderColor: '#fffdf8',
+          borderWidth: 3
         },
         label: {
           show: true,
-          formatter: '{b}\n{d}%'
+          formatter: '{b}\n{d}%',
+          fontFamily: 'Noto Sans SC',
+          fontSize: 11,
+          color: '#3d3226'
         },
         emphasis: {
-          label: {
-            show: true,
-            fontSize: 14,
-            fontWeight: 'bold'
-          }
+          label: { fontSize: 14, fontWeight: 'bold' },
+          scaleSize: 8
         },
         data: pieData
       }]
@@ -207,20 +213,28 @@ function initCharts() {
 
     lineChartInstance.setOption({
       tooltip: {
-        trigger: 'axis'
+        trigger: 'axis',
+        backgroundColor: '#fffdf8',
+        borderColor: '#E8D5B7',
+        textStyle: { color: '#2c2416', fontFamily: 'Noto Sans SC' }
       },
       legend: {
-        data: ['收入', '支出']
+        data: ['收入', '支出'],
+        textStyle: { fontFamily: 'Noto Sans SC', color: '#3d3226' },
+        top: 0
       },
+      grid: { top: 40, left: 10, right: 20, bottom: 0, containLabel: true },
       xAxis: {
         type: 'category',
-        data: dates
+        data: dates,
+        axisLine: { lineStyle: { color: '#E8D5B7' } },
+        axisTick: { show: false },
+        axisLabel: { color: '#8B7D6B', fontFamily: 'Noto Sans SC' }
       },
       yAxis: {
         type: 'value',
-        axisLabel: {
-          formatter: '¥{value}'
-        }
+        axisLabel: { formatter: '¥{value}', color: '#8B7D6B', fontFamily: 'Noto Sans SC' },
+        splitLine: { lineStyle: { color: '#F0EBE0' } }
       },
       series: [
         {
@@ -228,11 +242,14 @@ function initCharts() {
           type: 'line',
           smooth: true,
           data: incomes,
-          itemStyle: { color: '#67C23A' },
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: { color: '#4A7C59', width: 2.5 },
+          itemStyle: { color: '#4A7C59' },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(103, 194, 58, 0.3)' },
-              { offset: 1, color: 'rgba(103, 194, 58, 0.05)' }
+              { offset: 0, color: 'rgba(74, 124, 89, 0.2)' },
+              { offset: 1, color: 'rgba(74, 124, 89, 0.02)' }
             ])
           }
         },
@@ -241,11 +258,14 @@ function initCharts() {
           type: 'line',
           smooth: true,
           data: expenses,
-          itemStyle: { color: '#F56C6C' },
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: { color: '#C4342E', width: 2.5 },
+          itemStyle: { color: '#C4342E' },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(245, 108, 108, 0.3)' },
-              { offset: 1, color: 'rgba(245, 108, 108, 0.05)' }
+              { offset: 0, color: 'rgba(196, 52, 46, 0.2)' },
+              { offset: 1, color: 'rgba(196, 52, 46, 0.02)' }
             ])
           }
         }
@@ -272,7 +292,6 @@ onMounted(async () => {
   } catch (e) {
     console.error('获取仪表盘数据失败', e)
   }
-
   await nextTick()
   initCharts()
   window.addEventListener('resize', handleResize)
@@ -291,75 +310,158 @@ onBeforeUnmount(() => {
   margin: 0 auto;
 }
 
+/* ---- 概览卡片 ---- */
 .summary-cards {
-  margin-top: 20px;
-  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
 }
 
-.card-content {
+.summary-card {
+  background: #fffdf8;
+  border: 1px solid var(--gold-pale);
+  border-radius: var(--radius-md);
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+  cursor: default;
+}
+
+.summary-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.summary-card::after {
+  content: '';
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.card-income::after { background: #4A7C59; }
+.card-expense::after { background: #C4342E; }
+.card-balance::after { background: #B8860B; }
+
+/* 顶部彩色条 */
+.card-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+.card-income .card-decoration {
+  background: linear-gradient(90deg, #4A7C59, #6B9E7A);
+}
+.card-expense .card-decoration {
+  background: linear-gradient(90deg, #C4342E, #D4544E);
+}
+.card-balance .card-decoration {
+  background: linear-gradient(90deg, #B8860B, #C9A96E);
+}
+
+.card-inner {
   text-align: center;
-  padding: 10px 0;
+  position: relative;
+  z-index: 1;
 }
 
 .card-label {
+  font-family: var(--font-body);
   font-size: 14px;
-  color: #909399;
-  margin-bottom: 8px;
+  color: var(--text-secondary);
+  letter-spacing: 3px;
+  margin-bottom: 12px;
 }
 
 .card-value {
-  font-size: 28px;
-  font-weight: bold;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 2px;
 }
 
-.income {
-  color: #67C23A;
+.income { color: #4A7C59; }
+.expense { color: #C4342E; }
+
+/* ---- 中式卡片 ---- */
+.zh-card {
+  background: #fffdf8;
+  border: 1px solid var(--gold-pale);
+  border-radius: var(--radius-md);
 }
 
-.expense {
-  color: #F56C6C;
+.card-header-zh {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.income-card {
-  border-top: 3px solid #67C23A;
+.header-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--cinnabar);
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-.expense-card {
-  border-top: 3px solid #F56C6C;
+/* ---- 家庭概况 ---- */
+.family-section {
+  margin-bottom: 24px;
 }
 
-.balance-card {
-  border-top: 3px solid #409EFF;
-}
-
-.family-summary {
-  margin-bottom: 20px;
+.family-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 16px 0;
 }
 
 .family-stat-item {
-  text-align: center;
-  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 8px;
+.fs-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  letter-spacing: 2px;
 }
 
-.stat-value {
+.fs-value {
+  font-family: var(--font-display);
   font-size: 24px;
-  font-weight: bold;
+  font-weight: 700;
+  letter-spacing: 1px;
 }
 
-.section-title {
-  font-size: 16px;
-  font-weight: bold;
-  color: #303133;
+.family-stat-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--gold-pale);
 }
 
-.chart-row {
-  margin-bottom: 20px;
+/* ---- 图表 ---- */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  min-height: 420px;
 }
 
 .chart-container {
@@ -367,7 +469,19 @@ onBeforeUnmount(() => {
   height: 350px;
 }
 
-.recent-row {
-  margin-bottom: 20px;
+/* 响应式 */
+@media (max-width: 768px) {
+  .summary-cards,
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+  .family-stats {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .family-stat-divider {
+    width: 60%;
+    height: 1px;
+  }
 }
 </style>
