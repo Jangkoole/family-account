@@ -12,9 +12,9 @@ export const themes = [
 
 /** 主题 → CSS 文件映射 */
 const themeCssMap = {
-    chinese: '/src/styles/theme.css',
-    editorial: '/src/styles/theme-editorial.css',
-    journal: '/src/styles/theme-journal.css',
+    chinese: '/theme.css',
+    editorial: '/theme-editorial.css',
+    journal: '/theme-journal.css',
 }
 
 // 全局 link 元素引用，用于动态切换 CSS
