@@ -1,0 +1,268 @@
+/* ============================================
+   Paper Journal — 手账本风格
+   点阵 · 纸片 · 手写感 · 折叠阴影
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&family=Nunito:wght@300;400;500;600;700&family=Cutive+Mono&display=swap');
+
+/* ============================================
+   CSS 变量
+   ============================================ */
+:root {
+  /* 纸张色系 */
+  --paper: #F9F6F0;
+  --paper-warm: #FDF9F2;
+  --paper-cream: #F5EFE3;
+  --paper-dark: #EBE3D5;
+  --ink: #3A3428;
+  --ink-light: #6B6254;
+  --ink-faded: #A09888;
+
+  /* 标签色 - 柔和低饱和 */
+  --tag-green: #5B8C5A;
+  --tag-green-bg: #E8F0E4;
+  --tag-red: #C06050;
+  --tag-red-bg: #FAEBE8;
+  --tag-blue: #5577A0;
+  --tag-blue-bg: #E8EFF6;
+  --tag-yellow: #C09840;
+
+  /* 功能色 */
+  --income: #5B8C5A;
+  --income-bg: #E8F0E4;
+  --expense: #C06050;
+  --expense-bg: #FAEBE8;
+
+  /* 字体 */
+  --font-display: 'Kalam', 'Caveat', cursive;
+  --font-body: 'Nunito', 'Segoe UI', sans-serif;
+  --font-mono: 'Cutive Mono', 'JetBrains Mono', monospace;
+
+  /* 间距 */
+  --space-xs: 4px; --space-sm: 8px; --space-md: 16px;
+  --space-lg: 24px; --space-xl: 32px; --space-2xl: 48px;
+
+  /* 圆角 - 微微不规则 */
+  --radius-sm: 4px 8px 4px 8px;
+  --radius-md: 6px 12px 6px 12px;
+  --radius-lg: 8px 16px 8px 16px;
+
+  /* 阴影 - 纸片折叠感 */
+  --shadow-sm: 1px 2px 0 rgba(58, 52, 40, 0.06);
+  --shadow-md: 2px 4px 0 rgba(58, 52, 40, 0.08), 0 2px 8px rgba(58, 52, 40, 0.04);
+  --shadow-lg: 3px 6px 0 rgba(58, 52, 40, 0.1), 0 4px 16px rgba(58, 52, 40, 0.06);
+  --shadow-tape: 0 1px 3px rgba(58, 52, 40, 0.1);
+
+  --transition-smooth: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ============================================
+     兼容层 - 共享视图使用的变量名
+     映射到 journal 色值
+     ============================================ */
+  --ink-black: #3A3428;
+  --ink-deep: #3A3428;
+  --cinnabar: #C06050;
+  --cinnabar-light: #D07060;
+  --cinnabar-dark: #A05040;
+  --gold: #C09840;
+  --gold-light: #D0A860;
+  --gold-pale: #EBE3D5;
+  --rice-paper: #F9F6F0;
+  --rice-paper-light: #FDF9F2;
+  --rice-paper-dark: #F5EFE3;
+  --income-color: #5B8C5A;
+  --income-bg: #E8F0E4;
+  --expense-color: #C06050;
+  --expense-bg: #FAEBE8;
+  --text-primary: #3A3428;
+  --text-regular: #6B6254;
+  --text-secondary: #A09888;
+  --text-placeholder: #B8AFA0;
+  --text-inverse: #FDF9F2;
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+/* ============================================
+   全局
+   ============================================ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.7;
+}
+
+body {
+  /* 点阵纸背景 - 手账本核心特征 */
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(circle, rgba(58, 52, 40, 0.12) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: 2px 2px;
+  background-attachment: fixed;
+}
+
+::selection { background: rgba(192, 152, 64, 0.2); color: var(--ink); }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--ink);
+}
+h1 { font-size: 2rem; }
+h2 { font-size: 1.5rem; }
+a { color: var(--tag-blue); text-decoration: none; }
+a:hover { text-decoration: underline; text-decoration-style: wavy; text-underline-offset: 3px; }
+
+/* ============================================
+   滚动条
+   ============================================ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--paper-cream); }
+::-webkit-scrollbar-thumb { background: var(--ink-faded); border-radius: 3px; }
+
+/* ============================================
+   Element Plus 全覆盖 - Journal
+   ============================================ */
+
+/* -- 按钮 -- */
+.el-button {
+  font-family: var(--font-body); font-weight: 600; letter-spacing: 0.02em;
+  border-radius: 6px 12px 6px 12px; transition: all var(--transition-smooth);
+}
+.el-button--primary {
+  background: var(--ink); border-color: var(--ink); color: var(--paper-warm);
+  box-shadow: var(--shadow-sm);
+}
+.el-button--primary:hover {
+  background: var(--ink-light); border-color: var(--ink-light);
+  box-shadow: var(--shadow-md); transform: translateY(-1px);
+}
+.el-button--default {
+  background: var(--paper-warm); color: var(--ink-light);
+  border: 2px solid var(--ink-faded);
+}
+.el-button--default:hover {
+  border-color: var(--ink); color: var(--ink);
+}
+.el-button--danger { background: var(--tag-red); border-color: var(--tag-red); color: #fff; }
+.el-button--success { background: var(--tag-green); border-color: var(--tag-green); color: #fff; }
+
+/* -- 卡片 - 像纸质标签 -- */
+.el-card {
+  background: var(--paper-warm);
+  border: 2px solid var(--paper-dark);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-smooth);
+}
+.el-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+.el-card__header {
+  border-bottom: 2px dashed var(--paper-dark);
+  padding: 16px 20px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+}
+.el-card__body { padding: 20px; }
+
+/* -- 输入框 -- */
+.el-input__wrapper {
+  background: var(--paper-warm); border-radius: 4px 8px 4px 8px;
+  box-shadow: 0 0 0 2px var(--paper-dark);
+  transition: all var(--transition-smooth);
+}
+.el-input__wrapper:hover { box-shadow: 0 0 0 2px var(--ink-faded); }
+.el-input.is-focus .el-input__wrapper { box-shadow: 0 0 0 3px rgba(58, 52, 40, 0.2) !important; }
+.el-input__inner { color: var(--ink); }
+.el-input__inner::placeholder { color: var(--ink-faded); }
+
+/* -- 表格 -- */
+.el-table {
+  --el-table-border-color: var(--paper-dark);
+  --el-table-header-bg-color: var(--paper-cream);
+  --el-table-row-hover-bg-color: rgba(192, 152, 64, 0.06);
+  --el-table-bg-color: transparent;
+  font-family: var(--font-body); color: var(--ink);
+}
+.el-table th.el-table__cell {
+  background: var(--paper-cream); color: var(--ink-light);
+  font-family: var(--font-display); font-size: 15px; font-weight: 600;
+  border-bottom: 2px solid var(--paper-dark);
+}
+.el-table td.el-table__cell { border-bottom: 1px solid var(--paper-cream); }
+
+/* -- 标签 -- */
+.el-tag { border-radius: 4px 8px 4px 8px; font-weight: 600; border: none; font-size: 12px; }
+.el-tag--success { background: var(--tag-green-bg); color: var(--tag-green); }
+.el-tag--danger { background: var(--tag-red-bg); color: var(--tag-red); }
+.el-tag--info { background: var(--tag-blue-bg); color: var(--tag-blue); }
+
+/* -- 对话框 -- */
+.el-dialog {
+  background: var(--paper-warm); border: 3px solid var(--paper-dark);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+}
+.el-dialog__header {
+  border-bottom: 2px dashed var(--paper-dark); padding: 20px 24px; margin: 0;
+}
+.el-dialog__title { font-family: var(--font-display); font-size: 20px; }
+.el-dialog__footer { border-top: 2px dashed var(--paper-dark); padding: 16px 24px; }
+
+/* -- 菜单 -- */
+.el-menu { background: transparent; border: none; }
+.el-menu-item { color: var(--ink-light); font-family: var(--font-body); font-weight: 600; }
+.el-menu-item:hover { background: var(--paper-cream); color: var(--ink); }
+.el-menu-item.is-active { color: var(--ink); background: var(--paper-cream); font-weight: 700; }
+
+/* -- 分页/单选/Tab 等 -- */
+.el-pager li { color: var(--ink-light); }
+.el-pager li.is-active { background: var(--ink); color: var(--paper-warm); border-radius: 4px; }
+.el-radio__input.is-checked .el-radio__inner { background: var(--ink); border-color: var(--ink); }
+.el-radio__input.is-checked + .el-radio__label { color: var(--ink); }
+.el-radio-button__orig-radio:checked + .el-radio-button__inner {
+  background: var(--ink); border-color: var(--ink); color: var(--paper-warm);
+}
+.el-tabs__item { color: var(--ink-faded); font-family: var(--font-body); font-weight: 600; }
+.el-tabs__item.is-active { color: var(--ink); }
+.el-tabs__active-bar { background: var(--ink); height: 3px; }
+.el-select-dropdown__item.selected { color: var(--ink); }
+.el-date-table td.current:not(.disabled) .el-date-table-cell__text {
+  background: var(--ink); color: var(--paper-warm);
+}
+.el-alert--info { background: var(--tag-blue-bg); border: 2px solid var(--tag-blue); }
+.el-message { border-radius: var(--radius-md); }
+.el-loading-spinner .path { stroke: var(--ink); }
+.el-divider { border-color: var(--paper-dark); }
+.el-empty__description { color: var(--ink-faded); }
+
+/* ============================================
+   动画
+   ============================================ */
+@keyframes paperIn {
+  from { opacity: 0; transform: translateY(12px) rotate(-0.5deg); }
+  to { opacity: 1; transform: translateY(0) rotate(0deg); }
+}
+.card-enter { animation: paperIn 0.4s ease-out both; }
+.card-enter:nth-child(1) { animation-delay: 0.04s; }
+.card-enter:nth-child(2) { animation-delay: 0.1s; }
+.card-enter:nth-child(3) { animation-delay: 0.16s; }
+.card-enter:nth-child(4) { animation-delay: 0.22s; }
+
+/* ============================================
+   工具类
+   ============================================ */
+.handwrite { font-family: var(--font-display); }
+.mono-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 768px) {
+  :root { --space-xl: 20px; }
+}

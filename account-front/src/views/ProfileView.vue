@@ -19,6 +19,28 @@
       </div>
     </div>
 
+    <!-- 主题选择 -->
+    <el-card shadow="never" class="zh-card profile-card">
+      <template #header>
+        <div class="card-header-zh">
+          <span class="header-dot"></span>
+          <span>主题样式</span>
+        </div>
+      </template>
+      <div class="theme-selector">
+        <div
+          v-for="t in themes"
+          :key="t.value"
+          :class="['theme-option', { active: themeStore.current === t.value }]"
+          @click="themeStore.setTheme(t.value)"
+        >
+          <span class="theme-icon">{{ t.icon }}</span>
+          <span class="theme-label">{{ t.label }}</span>
+          <span v-if="themeStore.current === t.value" class="theme-check">✓</span>
+        </div>
+      </div>
+    </el-card>
+
     <!-- 修改昵称 -->
     <el-card shadow="never" class="zh-card profile-card">
       <template #header>
@@ -188,8 +210,10 @@ import {
   dissolveFamily
 } from '../api/family'
 import { useUserStore } from '../stores/user'
+import { useThemeStore, themes } from '../stores/theme'
 
 const userStore = useUserStore()
+const themeStore = useThemeStore()
 
 const nicknameFormRef = ref()
 const nicknameLoading = ref(false)
@@ -440,6 +464,60 @@ async function handleDissolveFamily() {
 }
 
 .family-actions { padding-top: 8px; }
+
+/* ---- 主题选择器 ---- */
+.theme-selector {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border: 1px solid var(--gold-pale);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  background: #fffdf8;
+  min-width: 140px;
+  position: relative;
+}
+
+.theme-option:hover {
+  border-color: var(--gold);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-option.active {
+  border-color: var(--cinnabar);
+  background: rgba(196, 52, 46, 0.04);
+  box-shadow: 0 0 0 1px var(--cinnabar);
+}
+
+.theme-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.theme-label {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-deep);
+  letter-spacing: 2px;
+}
+
+.theme-check {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 12px;
+  color: var(--cinnabar);
+  font-weight: 700;
+}
 
 @media (max-width: 768px) {
   .profile-banner { padding: 24px; }
