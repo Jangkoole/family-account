@@ -772,6 +772,11 @@ public class BillServiceImpl implements BillService {
         if (headerLineIdx == -1) {
             throw new Exception("未找到表头行，请确认文件格式");
         }
+        // 判断是交易明细格式（12列）还是记账本格式（8列）
+        String headerLine = lines[headerLineIdx];
+        String[] headerFields = parseCsvLine(headerLine, ',');
+        boolean isTransactionDetail = headerFields.length >= 10;
+
         for (int i = headerLineIdx + 1; i < lines.length; i++) {
             String line = lines[i];
             if (line.trim().isEmpty()) {
@@ -795,33 +800,58 @@ public class BillServiceImpl implements BillService {
             } catch (Exception e) {
                 continue;
             }
-            // CSV列: 交易时间,交易分类,交易对方,对方账号,商品说明,收/支,金额,收/付款方式,交易状态,交易订单号,商家订单号,备注
-            String alipayCategory = fields[1].trim();
-            bill.setCategoryName(mapAlipayCategoryToOurCategory(alipayCategory));
-            String alipayType = fields[5].trim();
-            if (alipayType.contains("收入")) {
-                bill.setType("INCOME");
-            } else if (alipayType.contains("支出")) {
-                bill.setType("EXPENSE");
+
+            if (isTransactionDetail) {
+                // 交易明细格式: 交易时间,交易分类,交易对方,对方账号,商品说明,收/支,金额,收/付款方式,交易状态,交易订单号,商家订单号,备注
+                String alipayCategory = fields[1].trim();
+                bill.setCategoryName(mapAlipayCategoryToOurCategory(alipayCategory));
+                String alipayType = fields[5].trim();
+                if (alipayType.contains("收入")) {
+                    bill.setType("INCOME");
+                } else if (alipayType.contains("支出")) {
+                    bill.setType("EXPENSE");
+                } else {
+                    continue;
+                }
+                String amountStr = fields[6].trim().replace("¥", "").replace(",", "");
+                if (amountStr.isEmpty()) {
+                    continue;
+                }
+                BigDecimal amount = new BigDecimal(amountStr);
+                if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+                bill.setAmount(amount);
+                // 备注在第12列（索引11），如果存在则取，否则取商品说明（索引4）
+                String note = fields.length > 11 ? fields[11].trim() : "";
+                if (note.isEmpty() && fields.length > 4) {
+                    note = fields[4].trim();
+                }
+                bill.setNote(note);
             } else {
-                continue;
+                // 记账本格式: 记录时间,分类,收支类型,金额,备注,账户,来源,标签
+                String categoryName = fields[1].trim();
+                bill.setCategoryName(mapAlipayCategoryToOurCategory(categoryName));
+                String typeStr = fields[2].trim();
+                if (typeStr.contains("收入")) {
+                    bill.setType("INCOME");
+                } else if (typeStr.contains("支出")) {
+                    bill.setType("EXPENSE");
+                } else {
+                    continue;
+                }
+                String amountStr = fields[3].trim().replace("¥", "").replace(",", "");
+                if (amountStr.isEmpty()) {
+                    continue;
+                }
+                BigDecimal amount = new BigDecimal(amountStr);
+                if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+                bill.setAmount(amount);
+                bill.setNote(fields.length > 4 ? fields[4].trim() : "");
             }
-            String amountStr = fields[6].trim().replace("¥", "").replace(",", "");
-            if (amountStr.isEmpty()) {
-                continue;
-            }
-            BigDecimal amount = new BigDecimal(amountStr);
-            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                continue;
-            }
-            bill.setAmount(amount);
             bill.setVisible("FAMILY");
-            // 备注在第12列（索引11），如果存在则取，否则取商品说明（索引4）
-            String note = fields.length > 11 ? fields[11].trim() : "";
-            if (note.isEmpty() && fields.length > 4) {
-                note = fields[4].trim();
-            }
-            bill.setNote(note);
             bills.add(bill);
         }
         return bills;
