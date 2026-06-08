@@ -357,14 +357,17 @@ async function handleRefreshInviteCode() {
   else ElMessage.error(res.message)
 }
 
-async function handleCopyInviteCode() {
-  try {
-    await navigator.clipboard.writeText(userStore.familyInfo.inviteCode)
-    ElMessage.success('邀请码已复制')
-  } catch {
-    // clipboard API 不可用时（非 HTTPS / 非 localhost），fallback 到选中文本
-    ElMessage.success('邀请码：' + userStore.familyInfo.inviteCode)
-  }
+function handleCopyInviteCode() {
+  const text = userStore.familyInfo.inviteCode
+  const input = document.createElement('input')
+  input.value = text
+  input.style.position = 'fixed'
+  input.style.opacity = '0'
+  document.body.appendChild(input)
+  input.select()
+  document.execCommand('copy')
+  document.body.removeChild(input)
+  ElMessage.success('邀请码已复制')
 }
 
 async function handleQuitFamily() {
